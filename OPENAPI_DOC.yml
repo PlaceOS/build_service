@@ -1,0 +1,471 @@
+---
+openapi: 3.0.3
+info:
+  description: PlaceOS Build API. Performs driver compilation, retrieval and storage
+    on S3
+  title: build-api
+  version: 1.0.0
+paths:
+  /api/build/v1:
+    get:
+      tags:
+      - Driver
+      operationId: PlaceOS::Api::Driver#index
+      parameters: []
+      responses:
+        200:
+          description: OK
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+  /api/build/v1/version:
+    get:
+      summary: returns the build details of the service
+      tags:
+      - Driver
+      operationId: PlaceOS::Api::Driver#version
+      parameters: []
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NamedTuple_version__String__build_time__String__commit__String__service__String_'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+  /api/build/v1/compiled/{file_name}/{arch}:
+    get:
+      summary: If requested driver is compiled and available in S3, returns 200 with
+        json response with size, md5, modified-time, pre-signed url details
+      description: 'If requested driver is compiled and available in S3, returns 200
+        with json response with size, md5, modified-time, pre-signed url details
+
+        else returns 404'
+      tags:
+      - Driver
+      operationId: PlaceOS::Api::Driver#compiled
+      parameters:
+      - name: file_name
+        in: path
+        description: the name of the driver file in the repository
+        example: drivers/place/meet.cr
+        required: true
+        schema:
+          type: string
+      - name: arch
+        in: path
+        description: the system architecture, defaults to architecutre of system where
+          this service is running
+        example: amd64 | arm64
+        required: true
+        schema:
+          type: string
+      - name: url
+        in: query
+        description: URL for a git repository
+        example: https://github.com/placeOS/drivers
+        required: true
+        schema:
+          type: string
+      - name: branch
+        in: query
+        description: Branch to return driver binary for, defaults to master
+        example: main
+        required: false
+        schema:
+          type: string
+          nullable: true
+      - name: commit
+        in: query
+        description: the commit hash of the driver to check is compiled
+        example: e901494
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_PlaceOS__Api__S3__LinkData___Nil_'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+  /api/build/v1/metadata/{file_name}:
+    get:
+      summary: If requested driver is compiled and available in S3, returns 200 with
+        metadata json
+      description: 'If requested driver is compiled and available in S3, returns 200
+        with metadata json
+
+        else returns 404'
+      tags:
+      - Driver
+      operationId: PlaceOS::Api::Driver#metadata
+      parameters:
+      - name: file_name
+        in: path
+        description: the name of the driver file in the repository
+        example: drivers/place/meet.cr
+        required: true
+        schema:
+          type: string
+      - name: url
+        in: query
+        description: URL for a git repository
+        example: https://github.com/placeOS/drivers
+        required: true
+        schema:
+          type: string
+      - name: branch
+        in: query
+        description: Branch to return driver binary for, defaults to master
+        example: main
+        required: false
+        schema:
+          type: string
+          nullable: true
+      - name: commit
+        in: query
+        description: the commit hash of the driver to check is compiled, defaults
+          to latest commit on branch
+        example: e901494362f6859100b8f3
+        required: true
+        schema:
+          type: string
+      - name: arch
+        in: query
+        required: false
+        schema:
+          type: string
+          nullable: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_String___Nil_'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+  /api/build/v1/{file_name}/{arch}:
+    post:
+      summary: Compile requested driver if not already compiled (or force = true),
+        pushes compiled driver binary to S3, returns 200 with json response with size,
+        md5, modified-time, pre-signed url details.
+      description: 'Compile requested driver if not already compiled (or force = true),
+        pushes compiled driver binary to S3, returns 200 with json response with size,
+        md5, modified-time, pre-signed url details.
+
+        Returns 401 if repository authentication or git checkout failed
+
+        Returns 406 with build stack-trace on compilation failure'
+      tags:
+      - Driver
+      operationId: PlaceOS::Api::Driver#build
+      parameters:
+      - name: file_name
+        in: path
+        description: the name of the driver file in the repository
+        example: drivers/place/meet.cr
+        required: true
+        schema:
+          type: string
+      - name: arch
+        in: path
+        description: the system architecture, defaults to architecutre of system where
+          this service is running
+        example: amd64 | arm64
+        required: true
+        schema:
+          type: string
+      - name: url
+        in: query
+        description: URL for a git repository
+        example: https://github.com/placeOS/drivers
+        required: true
+        schema:
+          type: string
+      - name: branch
+        in: query
+        description: Branch to return commits for, defaults to master
+        example: main
+        required: true
+        schema:
+          type: string
+      - name: commit
+        in: query
+        description: the commit hash of the driver to check is compiled
+        example: e901494
+        required: true
+        schema:
+          type: string
+      - name: force
+        in: query
+        description: Whether to re-compile driver using the latest shards? default
+          is false
+        example: "true"
+        required: false
+        schema:
+          type: boolean
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_PlaceOS__Api__S3__LinkData___Nil_'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+components:
+  schemas:
+    NamedTuple_version__String__build_time__String__commit__String__service__String_:
+      type: object
+      properties:
+        version:
+          type: string
+        build_time:
+          type: string
+        commit:
+          type: string
+        service:
+          type: string
+      required:
+      - version
+      - build_time
+      - commit
+      - service
+    _PlaceOS__Api__S3__LinkData___Nil_:
+      type: object
+      properties:
+        size:
+          type: integer
+          format: Int64
+        md5:
+          type: string
+        modified:
+          type: string
+          format: date-time
+        url:
+          type: string
+        link_expiry:
+          type: string
+          format: date-time
+      required:
+      - size
+      - md5
+      - modified
+      - url
+      - link_expiry
+      nullable: true
+    _String___Nil_:
+      type: string
+      nullable: true
+    PlaceOS__Api__Application__CommonError:
+      type: object
+      properties:
+        error:
+          type: string
+          nullable: true
+        backtrace:
+          type: array
+          items:
+            type: string
+          nullable: true
+    PlaceOS__Api__Application__ContentError:
+      type: object
+      properties:
+        error:
+          type: string
+        accepts:
+          type: array
+          items:
+            type: string
+          nullable: true
+      required:
+      - error
+      description: Provides details on available data formats
+    PlaceOS__Api__Application__ParameterError:
+      type: object
+      properties:
+        error:
+          type: string
+        parameter:
+          type: string
+          nullable: true
+        restriction:
+          type: string
+          nullable: true
+      required:
+      - error
+      description: Provides details on which parameter is missing or invalid

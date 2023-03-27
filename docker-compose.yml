@@ -1,0 +1,71 @@
+version: '3'
+
+x-s3-client-env: &s3-client-env
+  AWS_REGION: ${AWS_REGION:-"us-east-1"}
+  AWS_KEY: ${AWS_KEY:-"root"}
+  AWS_SECRET: ${AWS_SECRET:-"password"}
+  AWS_S3_ENDPOINT: ${AWS_S3_ENDPOINT:-"http://minio:9000"}
+  AWS_S3_BUCKET: ${AWS_S3_BUCKET:-"placeos-drivers-build-service"}
+
+
+services:
+  test:
+    image: placeos/service-spec-runner:${CRYSTAL_VERSION:-latest}
+    volumes:
+      - ${PWD}/spec:/app/spec
+      - ${PWD}/src:/app/src
+      - ${PWD}/lib:/app/lib
+      - ${PWD}/bin:/app/bin
+      - ${PWD}/shard.lock:/app/shard.lock
+      - ${PWD}/shard.override.yml:/app/shard.override.yml
+      - ${PWD}/shard.yml:/app/shard.yml.input
+    depends_on:
+      - minio
+      - testbucket
+    environment:
+      << : *s3-client-env
+      # Environment
+      GITHUB_ACTION: ${GITHUB_ACTION:-}
+      SG_ENV: ${SG_ENV:-development}
+
+  # build-api:
+  #   build: .
+  #   depends_on:
+  #     - minio
+  #     - testbucket
+  #   ports:
+  #     - 3000:3000
+  #   environment:
+  #     << : *s3-client-env
+  #     SG_ENV: "development"
+  
+  minio:
+    image: minio/minio:latest
+    volumes:
+      - s3:/data
+    ports:
+      - 9000:9000
+      - 9090:9090
+    environment:
+      << : *s3-client-env
+      MINIO_ACCESS_KEY: $AWS_KEY
+      MINIO_SECRET_KEY: $AWS_SECRET
+    command: server /data --console-address ":9090"
+
+  testbucket:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    environment:
+      << : *s3-client-env      
+    entrypoint: >
+      sh -c '
+      sleep 3 &&
+      mc config host add s3 $AWS_S3_ENDPOINT $AWS_KEY $AWS_SECRET &&
+      mc mb -p s3/$AWS_S3_BUCKET &&
+      exit 0
+      '
+
+volumes:
+  s3:
+    driver: local
