@@ -1,0 +1,12 @@
+name: CI
+on:
+  push:
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday at midnight 
+
+jobs:
+  style:
+    uses: PlaceOS/.github/.github/workflows/crystal-style.yml@main
+
+  test:
+    uses: PlaceOS/.github/.github/workflows/containerised-test.yml@main
