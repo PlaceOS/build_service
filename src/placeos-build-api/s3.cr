@@ -63,7 +63,6 @@ module PlaceOS::Api
       @[JSON::Field(converter: Time::EpochConverter)]
       getter modified : Time
       @metadata : String?
-      @url : String?
 
       def initialize(@name : String, headers : HTTP::Headers)
         @size = headers["content-length"].to_i64
@@ -81,27 +80,20 @@ module PlaceOS::Api
       end
 
       def url : String
-        @url ||= begin
-          options = Awscr::S3::Presigned::Url::Options.new(
-            aws_access_key: AWS_KEY,
-            aws_secret_key: AWS_SECRET,
-            region: AWS_REGION,
-            object: "/#{@name}",
-            bucket: AWS_S3_BUCKET,
-            host_name: hostname,
-            expires: AWS_S3_LINK_EXPIRY.to_i.to_i32,
-            additional_options: {
-              "Content-Type" => "binary/octet-stream",
-            })
-          url = Awscr::S3::Presigned::Url.new(options)
-          Log.debug { "Generating signed URL}" }
-          url = url.for(:get)
-          Timer.new(AWS_S3_LINK_EXPIRY) {
-            Log.debug { "Retrieval link expired" }
-            @url = nil
-          }
-          url
-        end
+        options = Awscr::S3::Presigned::Url::Options.new(
+          aws_access_key: AWS_KEY,
+          aws_secret_key: AWS_SECRET,
+          region: AWS_REGION,
+          object: "/#{@name}",
+          bucket: AWS_S3_BUCKET,
+          host_name: hostname,
+          expires: AWS_S3_LINK_EXPIRY.to_i.to_i32,
+          additional_options: {
+            "Content-Type" => "binary/octet-stream",
+          })
+        url = Awscr::S3::Presigned::Url.new(options)
+        Log.debug { "Generating signed URL}" }
+        url.for(:get)
       end
 
       def get_resp
