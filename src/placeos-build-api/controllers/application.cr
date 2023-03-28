@@ -38,11 +38,6 @@ module PlaceOS::Api
         request_id: request_id
       )
       response.headers["X-Request-ID"] = request_id
-
-      # If this is an upstream service, the ID should be extracted from a request header.
-      # request_id = request.headers["X-Request-ID"]? || UUID.random.to_s
-      # Log.context.set client_ip: client_ip, request_id: request_id
-      # response.headers["X-Request-ID"] = request_id
     end
 
     @[AC::Route::Filter(:before_action)]
