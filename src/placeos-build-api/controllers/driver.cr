@@ -24,12 +24,12 @@ module PlaceOS::Api
 
     # If requested driver is compiled and available in S3, returns 200 with json response with size, md5, modified-time, pre-signed url details
     # else returns 404
-    @[AC::Route::GET("/compiled/:file_name/:arch")]
+    @[AC::Route::GET("/:arch/compiled/:file_name")]
     def compiled(
-      @[AC::Param::Info(name: "file_name", description: "the name of the driver file in the repository", example: "drivers/place/meet.cr")]
-      file_name : String,
       @[AC::Param::Info(description: "the system architecture, defaults to architecutre of system where this service is running", example: "amd64 | arm64")]
       arch : String,
+      @[AC::Param::Info(name: "file_name", description: "the name of the driver file in the repository", example: "drivers/place/meet.cr")]
+      file_name : String,
       @[AC::Param::Info(description: "URL for a git repository", example: "https://github.com/placeOS/drivers")]
       url : String,
       @[AC::Param::Info(description: "Branch to return driver binary for, defaults to master", example: "main")]
@@ -69,12 +69,12 @@ module PlaceOS::Api
     # Compile requested driver if not already compiled (or force = true), pushes compiled driver binary to S3, returns 200 with json response with size, md5, modified-time, pre-signed url details.
     # Returns 401 if repository authentication or git checkout failed
     # Returns 406 with build stack-trace on compilation failure
-    @[AC::Route::POST("/:file_name/:arch")]
+    @[AC::Route::POST("/:arch/:file_name")]
     def build(
-      @[AC::Param::Info(name: "file_name", description: "the name of the driver file in the repository", example: "drivers/place/meet.cr")]
-      file_name : String,
       @[AC::Param::Info(description: "the system architecture, defaults to architecutre of system where this service is running", example: "amd64 | arm64")]
       arch : String,
+      @[AC::Param::Info(name: "file_name", description: "the name of the driver file in the repository", example: "drivers/place/meet.cr")]
+      file_name : String,
       @[AC::Param::Info(description: "URL for a git repository", example: "https://github.com/placeOS/drivers")]
       url : String,
       @[AC::Param::Info(description: "Branch to return commits for, defaults to master", example: "main")]

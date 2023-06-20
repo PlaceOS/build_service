@@ -101,7 +101,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
-  /api/build/v1/compiled/{file_name}/{arch}:
+  /api/build/v1/{arch}/compiled/{file_name}:
     get:
       summary: If requested driver is compiled and available in S3, returns 200 with
         json response with size, md5, modified-time, pre-signed url details
@@ -113,18 +113,18 @@ paths:
       - Driver
       operationId: PlaceOS::Api::Driver#compiled
       parameters:
-      - name: file_name
-        in: path
-        description: the name of the driver file in the repository
-        example: drivers/place/meet.cr
-        required: true
-        schema:
-          type: string
       - name: arch
         in: path
         description: the system architecture, defaults to architecutre of system where
           this service is running
         example: amd64 | arm64
+        required: true
+        schema:
+          type: string
+      - name: file_name
+        in: path
+        description: the name of the driver file in the repository
+        example: drivers/place/meet.cr
         required: true
         schema:
           type: string
@@ -284,7 +284,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
-  /api/build/v1/{file_name}/{arch}:
+  /api/build/v1/{arch}/{file_name}:
     post:
       summary: Compile requested driver if not already compiled (or force = true),
         pushes compiled driver binary to S3, returns 200 with json response with size,
@@ -300,18 +300,18 @@ paths:
       - Driver
       operationId: PlaceOS::Api::Driver#build
       parameters:
-      - name: file_name
-        in: path
-        description: the name of the driver file in the repository
-        example: drivers/place/meet.cr
-        required: true
-        schema:
-          type: string
       - name: arch
         in: path
         description: the system architecture, defaults to architecutre of system where
           this service is running
         example: amd64 | arm64
+        required: true
+        schema:
+          type: string
+      - name: file_name
+        in: path
+        description: the name of the driver file in the repository
+        example: drivers/place/meet.cr
         required: true
         schema:
           type: string

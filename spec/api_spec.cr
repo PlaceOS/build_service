@@ -43,13 +43,13 @@ module PlaceOS::Api
           "branch" => "master",
           "commit" => "abcxyzaa",
         }
-        resp = client.post("#{namespace}/#{uri}/#{Api.arch}?#{prms}")
+        resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{prms}")
         resp.status_code.should eq 401
         resp.body.includes?("failed to git checkout").should be_true
       end
 
       it "it should compile driver" do
-        resp = client.post("#{namespace}/#{uri}/#{Api.arch}?#{params}")
+        resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{params}")
         resp.status_code.should eq 200
         json = JSON.parse(resp.body).as_h
         {"size", "md5", "modified", "url", "link_expiry"}.each do |k|
@@ -58,7 +58,7 @@ module PlaceOS::Api
       end
 
       it "checks if a driver has been compiled" do
-        resp = client.get("#{namespace}/compiled/#{uri}/#{Api.arch}?#{params}")
+        resp = client.get("#{namespace}/#{Api.arch}/compiled/#{uri}?#{params}")
         resp.status_code.should eq 200
         json = JSON.parse(resp.body).as_h
         {"size", "md5", "modified", "url", "link_expiry"}.each do |k|

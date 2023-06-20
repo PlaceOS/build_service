@@ -6,7 +6,7 @@ module PlaceOS::Api::RunFrom
     status : Process::Status,
     output : IO::Memory
 
-  def self.run_from(path, command, args, timeout : Time::Span = 1.5.minutes, **rest)
+  def self.run_from(path, command, args, timeout : Time::Span = DEFAULT_TIMEOUT.seconds, **rest)
     # Run in a different thread to prevent blocking
     channel = Channel(Process::Status).new(capacity: 1)
     output = IO::Memory.new
