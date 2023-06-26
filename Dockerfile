@@ -8,6 +8,9 @@ ARG PLACE_COMMIT="DEV"
 # Set the platform version via a build arg
 ARG PLACE_VERSION="DEV"
 
+# Disable HTTP::Client instrumentation
+ENV OTEL_CRYSTAL_DISABLE_INSTRUMENTATION_HTTP_CLIENT=false
+
 # Install shards for caching
 COPY shard.* .
 RUN shards install --production --ignore-crystal-version --skip-postinstall --skip-executables
