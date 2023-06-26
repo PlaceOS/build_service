@@ -29,7 +29,7 @@ services:
       SG_ENV: ${SG_ENV:-development}
       SPEC_ARGUMENTS: ''
       TIMEOUT: 200
-      OTEL_CRYSTAL_DISABLE_INSTRUMENTATION_HTTP_CLIENT: false
+      OTEL_CRYSTAL_DISABLE_INSTRUMENTATION_HTTP_CLIENT: 'false'
 
   # build-api:
   #   build: .
