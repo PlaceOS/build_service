@@ -44,12 +44,68 @@ module PlaceOS::Api
           "commit" => "abcxyzaa",
         }
         resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{prms}")
-        resp.status_code.should eq 401
-        resp.body.includes?("failed to git checkout").should be_true
+        resp.status_code.should eq 202
+
+        task = TaskStatus.from_json(resp.body)
+        location = "#{namespace}/#{Api.arch}/task/#{task.id}"
+        hdr = resp.headers["Content-Location"]?
+        hdr.should_not be_nil
+        location.should eq(hdr)
+
+        task.state.to_s.should eq("pending")
+        task.repo.should eq("https://github.com/placeos/private-drivers")
+        task.driver.should eq("drivers/place/private_helper.cr")
+        task.branch.should eq("master")
+        task.commit.should eq("abcxyzaa")
+
+        loop do
+          resp = client.get(location)
+          task = TaskStatus.from_json(resp.body)
+          break if task.state.to_s != "pending"
+          resp.status_code.should eq 200
+          sleep 5
+        end
+        resp.status_code.should eq 200
+        task.state.to_s.should eq("error")
+        task.message.includes?("failed to git checkout").should be_true
       end
 
       it "it should compile driver" do
         resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{params}")
+        resp.status_code.should eq 202
+        second = client.post("#{namespace}/#{Api.arch}/#{uri}?#{params}")
+        second.status_code.should eq 202
+
+        resp.body.should eq(second.body)
+
+        task = TaskStatus.from_json(resp.body)
+        location = "#{namespace}/#{Api.arch}/task/#{task.id}"
+        hdr = resp.headers["Content-Location"]?
+        hdr.should_not be_nil
+        location.should eq(hdr)
+
+        task.state.to_s.should eq("pending")
+        task.repo.should eq("https://github.com/placeos/private-drivers")
+        task.driver.should eq("drivers/place/private_helper.cr")
+        task.branch.should eq("master")
+        task.commit.should eq("057e4e1cf6eadc2af0699d9f0fd5470baf6f7011")
+
+        loop do
+          resp = client.get(location)
+          task = TaskStatus.from_json(resp.body)
+          break if task.state.to_s != "pending"
+          resp.status_code.should eq 200
+          sleep 5
+        end
+        resp.status_code.should eq 303
+        task.state.to_s.should eq("done")
+
+        location = "#{namespace}/#{Api.arch}/compiled/#{uri}?#{params}"
+        hdr = resp.headers["Location"]?
+        hdr.should_not be_nil
+        location.should eq(hdr)
+
+        resp = client.get(location)
         resp.status_code.should eq 200
         json = JSON.parse(resp.body).as_h
         {"size", "md5", "modified", "url", "link_expiry"}.each do |k|

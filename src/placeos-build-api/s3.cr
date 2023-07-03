@@ -38,7 +38,9 @@ module PlaceOS::Api
     end
 
     def put(driver_name : String, binary : IO, meta_name : String, meta : IO)
-      client.put_object(AWS_S3_BUCKET, object: driver_name, body: binary)
+      uploader = Awscr::S3::FileUploader.new(client)
+      uploader.upload(AWS_S3_BUCKET, driver_name, binary)
+
       resp = head(driver_name)
       dinfo = DriverInfo.new(driver_name, resp.headers)
       dinfo.set_metadata(meta.gets_to_end)
