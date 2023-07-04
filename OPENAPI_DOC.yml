@@ -286,16 +286,14 @@ paths:
                 $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
   /api/build/v1/{arch}/{file_name}:
     post:
-      summary: Compile requested driver if not already compiled (or force = true),
-        pushes compiled driver binary to S3, returns 200 with json response with size,
-        md5, modified-time, pre-signed url details.
-      description: 'Compile requested driver if not already compiled (or force = true),
-        pushes compiled driver binary to S3, returns 200 with json response with size,
-        md5, modified-time, pre-signed url details.
+      summary: Async endpoint.
+      description: 'Async endpoint.
 
-        Returns 401 if repository authentication or git checkout failed
+        Upon receiving driver compilation request, it will return HTTP Status code
+        202 (Accepted) along with TaskStatus object, client should follow link provided
+        in header field
 
-        Returns 406 with build stack-trace on compilation failure'
+        Content-Location to track the status of this request.'
       tags:
       - Driver
       operationId: PlaceOS::Api::Driver#build
@@ -350,7 +348,85 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/_PlaceOS__Api__S3__LinkData___Nil_'
+                $ref: '#/components/schemas/PlaceOS__Api__TaskStatus'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+  /api/build/v1/{arch}/task/{id}:
+    get:
+      summary: Returns the status of driver compilation request submitted via POST
+        operation.
+      description: 'Returns the status of driver compilation request submitted via
+        POST operation.
+
+        Still processing: Returns reponse code 200 (OK) and a TaskStatus object representing
+        the status
+
+        Compilation completed: Returns response code 303 (See Other) and a Location
+        header containing a URI of the resource to fetch compiled driver binary
+
+        Compilation Failure: Returns response code 200 (OK) and a TaskStatus object
+        representing the status and failure message/reason.
+
+        Returns 404 if no such task exists'
+      tags:
+      - Driver
+      operationId: PlaceOS::Api::Driver#task_status
+      parameters:
+      - name: arch
+        in: path
+        description: the system architecture, defaults to architecutre of system where
+          this service is running
+        example: amd64 | arm64
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: Submitted Job ID returned by POST request
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_PlaceOS__Api__TaskStatus___Nil_'
         401:
           description: Unauthorized
           content:
@@ -430,6 +506,65 @@ components:
       nullable: true
     _String___Nil_:
       type: string
+      nullable: true
+    PlaceOS__Api__TaskStatus:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+          - pending
+          - error
+          - done
+        id:
+          type: string
+        message:
+          type: string
+        driver:
+          type: string
+        repo:
+          type: string
+        branch:
+          type: string
+        commit:
+          type: string
+      required:
+      - state
+      - id
+      - message
+      - driver
+      - repo
+      - branch
+      - commit
+    _PlaceOS__Api__TaskStatus___Nil_:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+          - pending
+          - error
+          - done
+        id:
+          type: string
+        message:
+          type: string
+        driver:
+          type: string
+        repo:
+          type: string
+        branch:
+          type: string
+        commit:
+          type: string
+      required:
+      - state
+      - id
+      - message
+      - driver
+      - repo
+      - branch
+      - commit
       nullable: true
     PlaceOS__Api__Application__CommonError:
       type: object
