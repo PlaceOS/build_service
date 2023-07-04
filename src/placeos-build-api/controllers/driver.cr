@@ -67,9 +67,9 @@ module PlaceOS::Api
       end
     end
 
-    # Compile requested driver if not already compiled (or force = true), pushes compiled driver binary to S3, returns 200 with json response with size, md5, modified-time, pre-signed url details.
-    # Returns 401 if repository authentication or git checkout failed
-    # Returns 406 with build stack-trace on compilation failure
+    # Async endpoint.
+    # Upon receiving driver compilation request, it will return HTTP Status code 202 (Accepted) along with TaskStatus object, client should follow link provided in header field
+    # Content-Location to track the status of this request.
     @[AC::Route::POST("/:arch/:file_name")]
     def build(
       @[AC::Param::Info(description: "the system architecture, defaults to architecutre of system where this service is running", example: "amd64 | arm64")]
@@ -94,7 +94,10 @@ module PlaceOS::Api
     end
 
     # Returns the status of driver compilation request submitted via POST operation.
-    # Returns 404 if no such job exists
+    # Still processing: Returns reponse code 200 (OK) and a TaskStatus object representing the status
+    # Compilation completed: Returns response code 303 (See Other) and a Location header containing a URI of the resource to fetch compiled driver binary
+    # Compilation Failure: Returns response code 200 (OK) and a TaskStatus object representing the status and failure message/reason.
+    # Returns 404 if no such task exists
     @[AC::Route::GET("/:arch/task/:id")]
     def task_status(
       @[AC::Param::Info(description: "the system architecture, defaults to architecutre of system where this service is running", example: "amd64 | arm64")]
