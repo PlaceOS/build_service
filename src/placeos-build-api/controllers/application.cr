@@ -45,12 +45,14 @@ module PlaceOS::Api
       response.headers["Date"] = HTTP.format_time(Time.utc)
     end
 
-    @[AC::Route::Filter(:before_action, except: [:index, :version])]
+    @[AC::Route::Filter(:before_action, except: [:index, :version, :task_status])]
     def get_default_branch(url : String, branch : String?, arch : String?, commit : String?)
       params["arch"] = Api.arch unless arch.presence
-      repo = Api.repository(url, branch, username, password)
-      params["branch"] = repo.default_branch if branch.nil?
-      params["commit"] = repo.commits(params["branch"], depth: 1).first.hash if commit.nil?
+      if branch.nil? || commit.nil?
+        repo = Api.repository(url, branch, username, password)
+        params["branch"] = repo.default_branch if branch.nil?
+        params["commit"] = repo.commits(params["branch"], depth: 1).first.hash if commit.nil?
+      end
     end
 
     ###########################################################################
