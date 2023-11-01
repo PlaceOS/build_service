@@ -46,7 +46,7 @@ module PlaceOS::Api
     end
 
     def location
-      uri = URI.encode_www_form("drivers/place/private_helper.cr")
+      uri = URI.encode_www_form(driver)
       params = URI::Params.build do |f|
         f.add "url", repo
         f.add "branch", branch
