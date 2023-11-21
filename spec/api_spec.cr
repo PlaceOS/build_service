@@ -124,6 +124,10 @@ module PlaceOS::Api
         resp = client.get("#{namespace}/metadata/#{uri}?#{params}")
         resp.status_code.should eq 200
         JSON.parse(resp.body) # doing it to ensure we are receiving valid JSON
+        # compiled driver should return defaults
+        resp = client.get("#{namespace}/defaults/#{uri}?#{params}")
+        resp.status_code.should eq 200
+        JSON.parse(resp.body) # doing it to ensure we are receiving valid JSON
       end
     end
   end

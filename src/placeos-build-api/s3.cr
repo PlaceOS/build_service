@@ -37,16 +37,23 @@ module PlaceOS::Api
       client.get_object(AWS_S3_BUCKET, name) { |resp| yield resp.body_io }
     end
 
-    def put(driver_name : String, binary : IO, meta_name : String, meta : IO)
+    def get(name)
+      client.get_object(AWS_S3_BUCKET, name)
+    end
+
+    def put(driver_name : String, binary : IO, meta_name : String, meta : IO, defaults_name : String, defaults : IO)
       uploader = Awscr::S3::FileUploader.new(client)
       uploader.upload(AWS_S3_BUCKET, driver_name, binary)
 
       resp = head(driver_name)
       dinfo = DriverInfo.new(driver_name, resp.headers)
       dinfo.set_metadata(meta.gets_to_end)
+      dinfo.set_defaults(defaults.gets_to_end)
       @@cache[driver_name] = dinfo
       meta.rewind
       client.put_object(AWS_S3_BUCKET, object: meta_name, body: meta)
+      defaults.rewind
+      client.put_object(AWS_S3_BUCKET, object: defaults_name, body: defaults)
       dinfo
     end
 
@@ -65,8 +72,17 @@ module PlaceOS::Api
       @[JSON::Field(converter: Time::EpochConverter)]
       getter modified : Time
       @metadata : String?
+      @defaults : String?
+
+      @meta_name : String
+      @defaults_name : String
+      @driver_name : String
 
       def initialize(@name : String, headers : HTTP::Headers)
+        parts = @name.split("_")
+        @meta_name = parts[0...-1].concat(["meta"]).join("_")
+        @defaults_name = parts[0...-1].concat(["defaults"]).join("_")
+        @driver_name = parts[0...-1].concat([Api.arch]).join("_")
         @size = headers["content-length"].to_i64
         @md5 = headers["etag"].strip('"')
         @modified = Time::Format::RFC_2822.parse(headers["last-modified"])
@@ -74,10 +90,22 @@ module PlaceOS::Api
 
       def metadata : String
         @metadata ||= begin
-          Api.with_s3 &.get("#{@name}", &.gets_to_end)
+          Api.with_s3 &.get("#{@meta_name}", &.gets_to_end)
         rescue ex
           Log.error { ex }
           raise ex
+        end
+      end
+
+      def defaults : String
+        @defaults ||= begin
+          Api.with_s3 do |s3|
+            s3.head(@defaults_name)
+            s3.get("#{@defaults_name}", &.gets_to_end)
+          rescue ex
+            Log.error(exception: ex) { "Driver defaults not found. Fetching and getting default" }
+            fetch_driver
+          end
         end
       end
 
@@ -104,6 +132,35 @@ module PlaceOS::Api
 
       def set_metadata(meta)
         @metadata = meta
+      end
+
+      def set_defaults(defaults)
+        @defaults = defaults
+      end
+
+      private def fetch_driver
+        Api.with_s3 do |s3|
+          resp = s3.head(@driver_name)
+          tempfile = File.tempfile
+          begin
+            resp = s3.get(@driver_name)
+            File.open(tempfile.path, mode: "w+") do |f|
+              f.write(resp.body.to_slice)
+            end
+            File.chmod(tempfile.path, 0o755)
+            tempfile.close
+            path = File.dirname(tempfile.path)
+            dname = File.basename(tempfile.path)
+            data = RunFrom.run_from(path, "./#{dname}", {"-d"})
+            raise Api::Error.new("Unable to retrieve defaults. #{data.output}") unless data.status.success?
+            data.output.rewind
+            s3.client.put_object(AWS_S3_BUCKET, object: @defaults_name, body: data.output)
+            data.output.rewind
+            data.output.gets_to_end
+          ensure
+            tempfile.delete
+          end
+        end
       end
 
       private def hostname

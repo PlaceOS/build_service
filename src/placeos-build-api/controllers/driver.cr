@@ -67,6 +67,27 @@ module PlaceOS::Api
       end
     end
 
+    # If requested driver is compiled and available in S3, returns 200 with defaults json
+    # else returns 404
+    @[AC::Route::GET("/defaults/:file_name")]
+    def defaults(
+      @[AC::Param::Info(name: "file_name", description: "the name of the driver file in the repository", example: "drivers/place/meet.cr")]
+      file_name : String,
+      @[AC::Param::Info(description: "URL for a git repository", example: "https://github.com/placeOS/drivers")]
+      url : String,
+      @[AC::Param::Info(description: "Branch to return driver binary for, defaults to master", example: "main")]
+      branch : String?,
+      @[AC::Param::Info(description: "the commit hash of the driver to check is compiled, defaults to latest commit on branch", example: "e901494362f6859100b8f3")]
+      commit : String
+    ) : String?
+      Log.context.set(driver: file_name, repository: url, branch: branch, commit: commit)
+      if ret = Api.with_s3 &.compiled?(file_name, "meta", url, commit, branch)
+        render json: ret.defaults
+      else
+        render :not_found
+      end
+    end
+
     # Async endpoint.
     # Upon receiving driver compilation request, it will return HTTP Status code 202 (Accepted) along with TaskStatus object, client should follow link provided in header field
     # Content-Location to track the status of this request.

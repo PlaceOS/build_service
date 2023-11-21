@@ -88,6 +88,9 @@ end
 Signal::INT.trap &terminate
 Signal::TERM.trap &terminate
 
+# Start the Task Runner
+PlaceOS::Api.task_runner.start
+
 # Start the server
 server.run do
   PlaceOS::Api::Log.info { "Listening on #{server.print_addresses}" }

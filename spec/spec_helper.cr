@@ -6,3 +6,5 @@ require "action-controller/spec_helper"
 # Your application config
 # If you have a testing environment, replace this with a test config file
 require "../src/config"
+
+PlaceOS::Api.task_runner.start
