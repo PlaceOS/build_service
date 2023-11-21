@@ -1,8 +1,10 @@
 require "uuid"
 require "digest/crc32"
+require "deque"
 require "./utils"
 
 module PlaceOS::Api
+  class_getter task_runner = TaskRunner.new
   @@tasks : Hash(String, Task) = {} of String => Task
   @@running : Hash(UInt32, String) = {} of UInt32 => String
 
@@ -18,7 +20,7 @@ module PlaceOS::Api
       else
         @@running[csum] = task.id
         @@tasks[task.id] = task
-        spawn { task.run }
+        task_runner.add_task(task)
       end
       task.status
     end
@@ -71,8 +73,8 @@ module PlaceOS::Api
   end
 
   private class Task
+    Log = ::Log.for(self)
     @state : State
-
     getter id : String
     getter repository : String
     getter branch : String
@@ -90,25 +92,38 @@ module PlaceOS::Api
       @message = "Driver #{source_file} compilation request accepted for processing"
     end
 
+    def log(msg : String? = nil)
+      Log.info { {message: msg || @message, id: id, repository: repository, branch: branch, source_file: source_file, commit: commit, force_compile: force_compile?} }
+    end
+
     def run
       if compile_required?
         @message = "Compiling driver #{source_file}"
+        log
         path, driver_binary = Api.compiler.compile(repository, branch, source_file, arch, commit, username, password)
-        @message = "Compilation completed. Retrieving driver metadata"
-        result = RunFrom.run_from(path, "./#{driver_binary}", {"-m"})
-        raise Api::Error.new("Unable to retrieve metadata. #{result.output}") unless result.status.success?
-        @message = "Metadata retrieval complete. Uploading driver to remote storage"
+        @message = "Compilation completed. Retrieving driver metadata & defaults"
+        log
+        meta = RunFrom.run_from(path, "./#{driver_binary}", {"-m"})
+        raise Api::Error.new("Unable to retrieve metadata. #{meta.output}") unless meta.status.success?
+        defaults = RunFrom.run_from(path, "./#{driver_binary}", {"-d"})
+        raise Api::Error.new("Unable to retrieve defaults. #{defaults.output}") unless defaults.status.success?
+
+        @message = "Metadata & defaults retrieval complete. Uploading driver to remote storage"
+        log
         driver_s3_name = Api.executable_name(repository, branch, source_file, arch, commit)
         meta_s3_name = Api.executable_name(repository, branch, source_file, "meta", commit)
+        defaults_s3_name = Api.executable_name(repository, branch, source_file, "defaults", commit)
         File.open(File.join(path, driver_binary)) do |driver|
-          Api.with_s3(&.put(driver_s3_name, driver, meta_s3_name, result.output)).get_resp
+          Api.with_s3(&.put(driver_s3_name, driver, meta_s3_name, meta.output, defaults_s3_name, defaults.output)).get_resp
         end
       end
       @state = State::Done
       @message = "Driver #{source_file} compilation completed"
+      log
     rescue ex : Exception
       @state = State::Error
       @message = ex.inspect_with_backtrace
+      Log.error(exception: ex) { "Exception occurred in Task run" }
     ensure
       path.try { |dir| FileUtils.rm_r(dir) } rescue nil
     end
@@ -133,6 +148,35 @@ module PlaceOS::Api
         sb << branch << commit << arch
       end
       Digest::CRC32.checksum(str.downcase)
+    end
+  end
+
+  class TaskRunner
+    getter lock : Mutex
+    getter tasks : Deque(Task)
+
+    def initialize
+      @lock = Mutex.new
+      @tasks = Deque(Task).new
+    end
+
+    def add_task(task : Task)
+      lock.synchronize { tasks.push(task) }
+    end
+
+    def start
+      spawn { run }
+    end
+
+    private def run
+      loop do
+        unless tasks.empty?
+          task = lock.synchronize { tasks.shift }
+          task.run
+          next
+        end
+        sleep 0.1
+      end
     end
   end
 end

@@ -2,12 +2,14 @@ require "opentelemetry-sdk"
 require "./error"
 
 module PlaceOS::Api::RunFrom
+  Log = ::Log.for(PlaceOS::Api::RunFrom)
   record Result,
     status : Process::Status,
     output : IO::Memory
 
   def self.run_from(path, command, args, timeout : Time::Span = DEFAULT_TIMEOUT.seconds, **rest)
     # Run in a different thread to prevent blocking
+    Log.info { {message: "Running command", path: path, command: command, args: args.to_s} }
     channel = Channel(Process::Status).new(capacity: 1)
     output = IO::Memory.new
     process = nil
