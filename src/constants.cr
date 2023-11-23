@@ -22,7 +22,8 @@ module PlaceOS::Api
   DEFAULT_HOST          = ENV["SG_SERVER_HOST"]? || "127.0.0.1"
   DEFAULT_PROCESS_COUNT = (ENV["SG_PROCESS_COUNT"]? || 1).to_i
 
-  DEFAULT_TIMEOUT = (ENV["TIMEOUT"]? || 120).to_i
+  DEFAULT_TIMEOUT  = (ENV["TIMEOUT"]? || 300).to_i
+  RECOMPILE_PREFIX = "RECOMPILE-"
 
   def self.arch
     {% if flag?(:x86_64) %} "amd64" {% elsif flag?(:aarch64) %} "arm64" {% end %} || raise("Uknown architecture")
