@@ -17,6 +17,10 @@ module PlaceOS::Api
 
     def compile(repository : String, branch : String, source_file : String, arch : String, commit : String? = nil,
                 username : String? = nil, password : String? = nil)
+      if (hash = commit) && hash.starts_with?(RECOMPILE_PREFIX)
+        commit = hash.lchop(RECOMPILE_PREFIX)
+      end
+
       Api.with_repository(repository, branch, source_file, commit, username, password) do |repo_path|
         _compile(repo_path.path, source_file, arch, (commit || repo_path.commit.hash))
       end

@@ -113,9 +113,12 @@ module PlaceOS::Api
         driver_s3_name = Api.executable_name(repository, branch, source_file, arch, commit)
         meta_s3_name = Api.executable_name(repository, branch, source_file, "meta", commit)
         defaults_s3_name = Api.executable_name(repository, branch, source_file, "defaults", commit)
-        File.open(File.join(path, driver_binary)) do |driver|
-          Api.with_s3(&.put(driver_s3_name, driver, meta_s3_name, meta.output, defaults_s3_name, defaults.output)).get_resp
+        driver = IO::Memory.new
+        File.open(File.join(path, driver_binary)) do |io|
+          IO.copy(io, driver)
         end
+        driver.rewind
+        Api.with_s3(&.put(driver_s3_name, driver, meta_s3_name, meta.output, defaults_s3_name, defaults.output)).get_resp
       end
       @state = State::Done
       @message = "Driver #{source_file} compilation completed"
@@ -171,8 +174,13 @@ module PlaceOS::Api
     private def run
       loop do
         unless tasks.empty?
-          task = lock.synchronize { tasks.shift }
-          task.run
+          # We will get into this only if tasks contain elements
+          # but for a race condition precaution (Though that's won't happen, as we are not running in MT mode)
+          # but in case, let's just capture IndexError (if any) and continue
+          # We don't to break out from this loop, or else remaining jobs won't get executed.
+          # Task#run doesn't raise any exception, so we are good here.
+          task = lock.synchronize { tasks.shift rescue nil }
+          task.try &.run
           next
         end
         sleep 0.1

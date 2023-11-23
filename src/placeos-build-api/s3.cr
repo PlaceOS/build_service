@@ -18,6 +18,7 @@ module PlaceOS::Api
     end
 
     def compiled?(driver, arch, repo, commit, branch)
+      commit = commit.lchop(RECOMPILE_PREFIX) if commit.starts_with?(RECOMPILE_PREFIX)
       name = Api.executable_name(repo, branch, driver, arch, commit)
       @@cache.fetch(name) do |key|
         Log.info { "Driver not found in cache." }
@@ -44,16 +45,16 @@ module PlaceOS::Api
     def put(driver_name : String, binary : IO, meta_name : String, meta : IO, defaults_name : String, defaults : IO)
       uploader = Awscr::S3::FileUploader.new(client)
       uploader.upload(AWS_S3_BUCKET, driver_name, binary)
-
+      headers = {"Content-Type" => "application/json"}
       resp = head(driver_name)
       dinfo = DriverInfo.new(driver_name, resp.headers)
       dinfo.set_metadata(meta.gets_to_end)
       dinfo.set_defaults(defaults.gets_to_end)
       @@cache[driver_name] = dinfo
       meta.rewind
-      client.put_object(AWS_S3_BUCKET, object: meta_name, body: meta)
+      client.put_object(AWS_S3_BUCKET, object: meta_name, body: meta, headers: headers)
       defaults.rewind
-      client.put_object(AWS_S3_BUCKET, object: defaults_name, body: defaults)
+      client.put_object(AWS_S3_BUCKET, object: defaults_name, body: defaults, headers: headers)
       dinfo
     end
 
@@ -154,7 +155,7 @@ module PlaceOS::Api
             data = RunFrom.run_from(path, "./#{dname}", {"-d"})
             raise Api::Error.new("Unable to retrieve defaults. #{data.output}") unless data.status.success?
             data.output.rewind
-            s3.client.put_object(AWS_S3_BUCKET, object: @defaults_name, body: data.output)
+            s3.client.put_object(AWS_S3_BUCKET, object: @defaults_name, body: data.output, headers: {"Content-Type" => "application/json"})
             data.output.rewind
             data.output.gets_to_end
           ensure
