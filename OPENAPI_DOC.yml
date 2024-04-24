@@ -17,10 +17,6 @@ paths:
           description: OK
         401:
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
         404:
           description: Not Found
           content:
@@ -67,10 +63,6 @@ paths:
                 $ref: '#/components/schemas/NamedTuple_version__String__build_time__String__commit__String__service__String_'
         401:
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
         404:
           description: Not Found
           content:
@@ -159,10 +151,6 @@ paths:
                 $ref: '#/components/schemas/_PlaceOS__Api__S3__LinkData___Nil_'
         401:
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
         404:
           description: Not Found
           content:
@@ -250,10 +238,93 @@ paths:
                 $ref: '#/components/schemas/_String___Nil_'
         401:
           description: Unauthorized
+        404:
+          description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+  /api/build/v1/defaults/{file_name}:
+    get:
+      summary: If requested driver is compiled and available in S3, returns 200 with
+        defaults json
+      description: 'If requested driver is compiled and available in S3, returns 200
+        with defaults json
+
+        else returns 404'
+      tags:
+      - Driver
+      operationId: PlaceOS::Api::Driver#defaults
+      parameters:
+      - name: file_name
+        in: path
+        description: the name of the driver file in the repository
+        example: drivers/place/meet.cr
+        required: true
+        schema:
+          type: string
+      - name: url
+        in: query
+        description: URL for a git repository
+        example: https://github.com/placeOS/drivers
+        required: true
+        schema:
+          type: string
+      - name: branch
+        in: query
+        description: Branch to return driver binary for, defaults to master
+        example: main
+        required: false
+        schema:
+          type: string
+          nullable: true
+      - name: commit
+        in: query
+        description: the commit hash of the driver to check is compiled, defaults
+          to latest commit on branch
+        example: e901494362f6859100b8f3
+        required: true
+        schema:
+          type: string
+      - name: arch
+        in: query
+        required: false
+        schema:
+          type: string
+          nullable: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_String___Nil_'
+        401:
+          description: Unauthorized
         404:
           description: Not Found
           content:
@@ -351,10 +422,6 @@ paths:
                 $ref: '#/components/schemas/PlaceOS__Api__TaskStatus'
         401:
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
         404:
           description: Not Found
           content:
@@ -429,10 +496,119 @@ paths:
                 $ref: '#/components/schemas/_PlaceOS__Api__TaskStatus___Nil_'
         401:
           description: Unauthorized
+        404:
+          description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+  /api/build/v1/monitor:
+    get:
+      summary: Job monitor endpoint. Provides a list of requested state Jobs
+      tags:
+      - Monitor
+      operationId: PlaceOS::Api::Monitor#monitor
+      parameters:
+      - name: state
+        in: query
+        description: state of job to return. One of [pending,running,cancelled error,done].
+          Defaults to 'pending'
+        example: pending
+        required: false
+        schema:
+          type: string
+          enum:
+          - pending
+          - running
+          - cancelled
+          - error
+          - done
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlaceOS__Api__TaskStatus'
+        401:
+          description: Unauthorized
+        404:
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        406:
+          description: Not Acceptable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__CommonError'
+        415:
+          description: Unsupported Media Type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ContentError'
+        422:
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceOS__Api__Application__ParameterError'
+  /api/build/v1/cancel/{job}:
+    delete:
+      tags:
+      - Monitor
+      operationId: PlaceOS::Api::Monitor#cancel
+      parameters:
+      - name: job
+        in: path
+        description: ID of previously submitted compilation job
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/_String___Nil_'
+        401:
+          description: Unauthorized
         404:
           description: Not Found
           content:
@@ -514,6 +690,8 @@ components:
           type: string
           enum:
           - pending
+          - running
+          - cancelled
           - error
           - done
         id:
@@ -528,6 +706,9 @@ components:
           type: string
         commit:
           type: string
+        timestamp:
+          type: string
+          format: date-time
       required:
       - state
       - id
@@ -536,6 +717,7 @@ components:
       - repo
       - branch
       - commit
+      - timestamp
     _PlaceOS__Api__TaskStatus___Nil_:
       type: object
       properties:
@@ -543,6 +725,8 @@ components:
           type: string
           enum:
           - pending
+          - running
+          - cancelled
           - error
           - done
         id:
@@ -557,6 +741,9 @@ components:
           type: string
         commit:
           type: string
+        timestamp:
+          type: string
+          format: date-time
       required:
       - state
       - id
@@ -565,6 +752,7 @@ components:
       - repo
       - branch
       - commit
+      - timestamp
       nullable: true
     PlaceOS__Api__Application__CommonError:
       type: object

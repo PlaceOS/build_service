@@ -107,7 +107,7 @@ module PlaceOS::Api
       force : Bool = false
     ) : TaskStatus
       Log.context.set(driver: file_name, arch: arch, repository: url, branch: branch, commit: commit, force: force)
-      Log.info { "Building driver" }
+      Log.info { "Processing compile driver request" }
       task = Api.add_task(url, branch, file_name, arch, commit, username, password, force)
 
       response.headers["Content-Location"] = Driver.task_status(arch: arch, id: task.id)

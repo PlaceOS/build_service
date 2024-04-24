@@ -7,7 +7,7 @@ shards:
 
   ameba:
     git: https://github.com/veelenga/ameba.git
-    version: 1.4.3
+    version: 1.6.1
 
   awscr-s3:
     git: https://github.com/taylorfinnell/awscr-s3.git
@@ -24,6 +24,14 @@ shards:
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
     version: 2.0.0
+
+  crystal-base32:
+    git: https://github.com/sushichain/crystal-base32.git
+    version: 0.1.4
+
+  crystal-two-factor-auth:
+    git: https://github.com/stakach/crystal-two-factor-auth.git
+    version: 0.1.2+git.commit.afb809e7261837f5ac3cf6758bc06d8fc8c9e4eb
 
   csuuid:
     git: https://github.com/wyhaines/csuuid.cr.git
@@ -97,6 +105,10 @@ shards:
     git: https://github.com/jeromegn/protobuf.cr.git
     version: 2.3.0
 
+  qr-code:
+    git: https://github.com/spider-gazelle/qr-code.git
+    version: 1.0.3
+
   retriable:
     git: https://github.com/sija/retriable.cr.git
     version: 0.2.4
@@ -104,6 +116,10 @@ shards:
   splay_tree_map:
     git: https://github.com/wyhaines/splay_tree_map.cr.git
     version: 0.2.2
+
+  sqlite3:
+    git: https://github.com/crystal-lang/crystal-sqlite3.git
+    version: 0.19.0
 
   time-ext:
     git: https://github.com/wyhaines/time-ext.cr.git

@@ -11,6 +11,11 @@ ARG PLACE_VERSION="DEV"
 # Disable HTTP::Client instrumentation
 ENV OTEL_CRYSTAL_DISABLE_INSTRUMENTATION_HTTP_CLIENT=false
 
+# Install sqlite3
+RUN apk update && apk upgrade
+RUN apk add --no-cache sqlite-dev
+
+
 # Install shards for caching
 COPY shard.* .
 RUN shards install --production --ignore-crystal-version --skip-postinstall --skip-executables
@@ -27,6 +32,11 @@ ENV HOME="/app"
 ARG IMAGE_UID="10001"
 ENV UID=$IMAGE_UID
 ENV USER=appuser
+
+# Install sqlite3
+RUN apk update && apk upgrade
+RUN apk add --no-cache sqlite
+
 
 # Create a non-privileged user, defaults are appuser:10001
 RUN adduser \

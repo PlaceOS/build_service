@@ -1,6 +1,6 @@
 # PlaceOS Build Driver Service
 
-[PlaceOS](https://place.technology/) service handling events and conditional triggers.
+[PlaceOS](https://place.technology/) service for compiling and storing PlaceOS drivers. 
 
 ## Contributing
 

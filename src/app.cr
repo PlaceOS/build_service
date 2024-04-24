@@ -1,5 +1,6 @@
 require "option_parser"
 require "./constants"
+require "./two_factor"
 
 # Server defaults
 port = PlaceOS::Api::DEFAULT_PORT
@@ -25,6 +26,33 @@ OptionParser.parse(ARGV.dup) do |parser|
 
   parser.on("-v", "--version", "Display the application version") do
     puts "#{PlaceOS::Api::APP_NAME} v#{PlaceOS::Api::VERSION}"
+    exit 0
+  end
+
+  parser.on("-i ID", "--2fa=ID", "generates the 2fa QR code with the specified identifier") do |id|
+    secret = ENV["TOTP_SECRET"]?
+    if secret
+      TwoFactor.print_totp_qr_code(id, secret)
+    else
+      puts "must configure 'TOTP_SECRET' ENV var"
+    end
+    exit 0
+  end
+
+  parser.on("-t", "--totp", "generates a totp secret") do
+    puts "export TOTP_SECRET=#{TOTP.generate_base32_secret(32)}"
+    exit 0
+  end
+
+  parser.on("-a", "--access", "generates a valid authorisation header") do
+    secret = ENV["TOTP_SECRET"]?
+    if secret
+      code = TOTP.generate_number_string(secret)
+      puts "Current code: #{code}"
+      puts "Authorization: Basic #{Base64.strict_encode(":#{code}")}"
+    else
+      puts "must configure 'TOTP_SECRET' ENV var"
+    end
     exit 0
   end
 
@@ -89,7 +117,7 @@ Signal::INT.trap &terminate
 Signal::TERM.trap &terminate
 
 # Start the Task Runner
-PlaceOS::Api.task_runner.start
+PlaceOS::Api.on_start
 
 # Start the server
 server.run do

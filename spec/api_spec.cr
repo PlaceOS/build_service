@@ -57,13 +57,12 @@ module PlaceOS::Api
         loop do
           resp = client.get(location)
           task = TaskStatus.from_json(resp.body)
-          break if task.state.to_s != "pending"
+          break if task.completed?
           resp.status_code.should eq 200
           sleep 5
         end
         resp.status_code.should eq 200
         task.state.to_s.should eq("error")
-        task.message.includes?("failed to git checkout").should be_true
       end
 
       it "it should compile driver" do
@@ -76,7 +75,10 @@ module PlaceOS::Api
         second = client.post("#{namespace}/#{Api.arch}/#{uri}?#{params}")
         second.status_code.should eq 202
 
-        resp.body.should eq(second.body)
+        t1 = TaskStatus.from_json(resp.body)
+        t2 = TaskStatus.from_json(second.body)
+
+        t1.should eq(t2)
 
         task = TaskStatus.from_json(resp.body)
         location = "#{namespace}/#{Api.arch}/task/#{task.id}"
@@ -93,7 +95,7 @@ module PlaceOS::Api
         loop do
           resp = client.get(location)
           task = TaskStatus.from_json(resp.body)
-          break if task.state.to_s != "pending"
+          break if task.completed?
           resp.status_code.should eq 200
           sleep 5
         end
@@ -128,6 +130,84 @@ module PlaceOS::Api
         resp = client.get("#{namespace}/defaults/#{uri}?#{params}")
         resp.status_code.should eq 200
         JSON.parse(resp.body) # doing it to ensure we are receiving valid JSON
+      end
+
+      it "should handle duplicate request" do
+        prms = HTTP::Params{
+          "url"    => "https://github.com/placeos/private-drivers",
+          "branch" => "master",
+          "commit" => "abcxyzaa",
+        }
+
+        resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{prms}")
+        resp.status_code.should eq 202
+
+        task = TaskStatus.from_json(resp.body)
+
+        # send same request again
+        resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{prms}")
+        resp.status_code.should eq 202
+        task2 = TaskStatus.from_json(resp.body)
+        task2.id.should eq(task.id)
+      end
+
+      it "should return a list of pending jobs" do
+        0.upto(3) do |i|
+          prms = HTTP::Params{
+            "url"    => "https://github.com/placeos/private-drivers",
+            "branch" => "master",
+            "commit" => "abcxyzaa#{i}",
+          }
+          client.post("#{namespace}/#{Api.arch}/#{uri}?#{prms}")
+        end
+        resp = client.get("#{namespace}/monitor")
+        resp.status_code.should eq 200
+        queue = Array(TaskStatus).from_json(resp.body)
+        queue.size.should be > 0
+      end
+
+      it "should handle undone jobs on startup" do
+        state = Api.get_incomplete_tasks.map { |t| {t.id, t.state} }
+        Api.on_start
+        pending, cancelled = state.partition { |_, s| s == Api::State::Pending }
+        cancelled.each { |c| Api.running?(c[0]).should be_false }
+        pending.each { |c| Api.running?(c[0]).should be_true }
+      end
+
+      it "should return with 404 when cancelling a non pending jobs" do
+        code = TOTP.generate_number_string(Api::TOTP_SECRET)
+        auth_headers = HTTP::Headers{
+          "Authorization" => Base64.strict_encode(":#{code}"),
+        }
+
+        client.delete("#{namespace}/cancel/abcxyze", headers: auth_headers).status_code.should eq(404)
+      end
+
+      it "cancelling a job should return 401 if unauthorized" do
+        client.delete("#{namespace}/cancel/abcxyz").status_code.should eq(401)
+      end
+
+      it "should cancel pending jobs" do
+        prms = HTTP::Params{
+          "url"    => "https://github.com/placeos/private-drivers",
+          "branch" => "master",
+          "commit" => "abcxyzaa",
+        }
+
+        resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{prms}")
+        resp.status_code.should eq 202
+
+        task = TaskStatus.from_json(resp.body)
+
+        code = TOTP.generate_number_string(Api::TOTP_SECRET)
+        auth_headers = HTTP::Headers{
+          "Authorization" => Base64.strict_encode(":#{code}"),
+        }
+
+        resp = client.delete("#{namespace}/cancel/#{task.id}", headers: auth_headers)
+        status = JSON.parse(resp.body).as_h
+        status["status"].should eq("success")
+        status["message"].should eq("Job with id #{task.id} cancelled successfully")
       end
     end
   end

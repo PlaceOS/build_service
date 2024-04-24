@@ -1,5 +1,5 @@
 name: build-api
-version: 1.0.0
+version: 1.1.0
 
 crystal: ~> 1.0
 license: MIT
@@ -15,17 +15,25 @@ dependencies:
     github: spider-gazelle/action-controller
     version: ~> 5.5
   git-repository:
-        github: place-labs/git-repository
+    github: place-labs/git-repository
   placeos-log-backend:
     github: place-labs/log-backend
     version: ">= 0.11.2"
   awscr-s3:
-      github: taylorfinnell/awscr-s3    
+    github: taylorfinnell/awscr-s3
+  sqlite3:
+    github: crystal-lang/crystal-sqlite3
+
+  # security
+  crystal-two-factor-auth:
+    github: stakach/crystal-two-factor-auth
+
+  # QR code generation
+  qr-code:
+    github: spider-gazelle/qr-code
 
 development_dependencies:
   ameba:
     github: veelenga/ameba
   hot_topic:
     github: jgaskins/hot_topic
-
-
