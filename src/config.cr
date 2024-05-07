@@ -19,4 +19,13 @@ module PlaceOS::Api
     ActionController::ErrorHandler.new,
     ActionController::LogHandler.new(filters, ms: true)
   )
+
+  # Configure session cookies
+  # NOTE:: Change these from defaults
+  ActionController::Session.configure do |settings|
+    settings.key = COOKIE_SESSION_KEY
+    settings.secret = COOKIE_SESSION_SECRET
+    # HTTPS only:
+    settings.secure = false
+  end
 end

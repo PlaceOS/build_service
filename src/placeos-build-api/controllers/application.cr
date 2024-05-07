@@ -3,6 +3,7 @@ require "uuid"
 
 require "../error"
 require "../utils"
+require "../../two_factor"
 
 module PlaceOS::Api
   abstract class Application < ActionController::Base
@@ -45,7 +46,7 @@ module PlaceOS::Api
       response.headers["Date"] = HTTP.format_time(Time.utc)
     end
 
-    @[AC::Route::Filter(:before_action, except: [:index, :version, :task_status])]
+    @[AC::Route::Filter(:before_action, except: [:index, :version, :task_status, :monitor, :cancel])]
     def get_default_branch(url : String, branch : String?, arch : String?, commit : String?)
       params["arch"] = Api.arch unless arch.presence
       if branch.nil? || commit.nil?
@@ -53,6 +54,21 @@ module PlaceOS::Api
         params["branch"] = repo.default_branch if branch.nil?
         params["commit"] = repo.commits(params["branch"], depth: 1).first.hash if commit.nil?
       end
+    end
+
+    # check if authenticated
+    @[AC::Route::Filter(:before_action, only: [:cancel])]
+    def ensure_authenticated
+      return if session["authed"]?
+      if auth = request.headers["Authorization"]?
+        auth = Base64.decode_string auth.lchop("Basic ")
+        code = auth.split(':', 2)[1]
+        if TOTP.validate_number_string(Api::TOTP_SECRET, code, 30000)
+          session["authed"] = true
+          return
+        end
+      end
+      raise AC::Error::Unauthorized.new
     end
 
     ###########################################################################
@@ -72,10 +88,9 @@ module PlaceOS::Api
     end
 
     # 401 if credentials are invalid
-    @[AC::Route::Exception(Error::Unauthorized, status_code: HTTP::Status::UNAUTHORIZED)]
-    def invalid_access_credentials(error) : CommonError
-      Log.debug { error.message }
-      CommonError.new(error, false)
+    @[AC::Route::Exception(AC::Error::Unauthorized, status_code: HTTP::Status::UNAUTHORIZED)]
+    def unauthorized(_error) : Nil
+      response.headers["WWW-Authenticate"] = %(Basic realm="PlaceOS Build Service", charset="UTF-8")
     end
 
     # 404 if resource not present

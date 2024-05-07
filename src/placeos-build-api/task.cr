@@ -2,49 +2,103 @@ require "uuid"
 require "digest/crc32"
 require "deque"
 require "./utils"
+require "./persistence"
 
 module PlaceOS::Api
-  class_getter task_runner = TaskRunner.new
-  @@tasks : Hash(String, Task) = {} of String => Task
-  @@running : Hash(UInt32, String) = {} of UInt32 => String
-
+  class_getter task_runner = TaskRunner.new(PARALELL_JOBS)
   class_getter task_lock = Mutex.new
 
-  def self.add_task(repository : String, branch : String, source_file : String, arch : String, commit : String? = nil,
+  def self.on_start
+    task_runner.start
+    Api.get_incomplete_tasks.each do |task|
+      case task.state
+      when .pending? then task_runner.add_task(task)
+      when .running? then Api.update_status(task.id, State::Cancelled, "Job cancelled due to process kill")
+      end
+    end
+  end
+
+  def self.add_task(repository : String, branch : String, source_file : String, arch : String, commit : String,
                     username : String? = nil, password : String? = nil, force = false) : TaskStatus
     task_lock.synchronize do
-      task = Task.new(repository, branch, source_file, arch, commit, username, password, force)
-      csum = task.checksum
-      if @@running.has_key?(csum)
-        task = @@tasks[@@running[csum]]
-      else
-        @@running[csum] = task.id
-        @@tasks[task.id] = task
-        task_runner.add_task(task)
+      csum = checksum(repository, source_file, branch, commit, arch)
+      if Api.attempts(csum, State::Error) >= ALLOWED_FAILED_ATTEMPTS
+        Log.info { {message: "Driver compilation failure attempts exceed, returning last failed reason", driver: source_file, branch: branch, commit: commit} }
+        return get_last_result(csum)
       end
+      if Api.job_exists?(csum)
+        job = Api.get_last_result(csum)
+        return job if running?(job.id)
+      end
+      task = Task.new(repository, branch, source_file, arch, commit, username, password, force)
+      Api.add_job(task)
+
+      task_runner.add_task(task)
       task.status
     end
   end
 
-  def self.task_status(id : String) : TaskStatus?
-    task = task_lock.synchronize do
-      val = @@tasks[id]?
-      if (v = val) && (v.done?)
-        @@running.delete(v.checksum)
-        @@tasks.delete(v.id)
-      end
-      val
-    end
+  def self.cancel_task(task_id : String)
+    return false unless running?(task_id, true)
+    task_runner.cancel_task(task_id)
+    Api.update_status(task_id, State::Cancelled, "Job cancelled by admin")
+    true
+  end
 
-    task.try &.status
+  def self.task_status(id : String) : TaskStatus?
+    task_lock.synchronize do
+      get_status(id)
+    end
+  end
+
+  def self.running?(id : String, pending_only = false)
+    task_runner.has?(id, pending_only)
+  end
+
+  def self.checksum(repository, source_file, branch, commit, arch)
+    str = String.build do |sb|
+      sb << repository
+      sb << source_file
+      sb << branch << commit << arch
+    end
+    Digest::CRC32.checksum(str.downcase)
   end
 
   record TaskStatus, state : State, id : String, message : String,
-    driver : String, repo : String, branch : String, commit : String do
+    driver : String, repo : String, branch : String, commit : String, timestamp : Time do
     include JSON::Serializable
+    include DB::Serializable
+
+    @[DB::Field(key: "sha")]
+    @commit : String
+
+    @[DB::Field(key: "source")]
+    @driver : String
+
+    @[DB::Field(key: "updated_at")]
+    @timestamp : Time
+
+    @[DB::Field(converter: Enum::ValueConverter(PlaceOS::Api::State))]
+    @state : State
 
     def success?
       @state == State::Done
+    end
+
+    def cancelled?
+      @state == State::Cancelled
+    end
+
+    def pending?
+      @state == State::Pending
+    end
+
+    def completed?
+      @state.in?(State::Cancelled, State::Error, State::Done)
+    end
+
+    def in_progress?
+      @state.in?(State::Pending, State::Running)
     end
 
     def location
@@ -56,10 +110,14 @@ module PlaceOS::Api
       end
       "#{uri}?#{params}"
     end
+
+    def_equals_and_hash @state, @id, @message, @driver, @repo, @branch, @commit
   end
 
   enum State
     Pending
+    Running
+    Cancelled
     Error
     Done
 
@@ -73,17 +131,27 @@ module PlaceOS::Api
   end
 
   private class Task
+    include DB::Serializable
     Log = ::Log.for(self)
-    @state : State
+
+    @[DB::Field(converter: Enum::ValueConverter(PlaceOS::Api::State))]
+    getter state : State
+
     getter id : String
+    @[DB::Field(key: "repo")]
     getter repository : String
     getter branch : String
+    @[DB::Field(key: "source")]
     getter source_file : String
     getter arch : String
+    @[DB::Field(key: "sha")]
     getter commit : String
     getter username : String?
     getter password : String?
+    @[DB::Field(key: "force")]
     getter? force_compile : Bool
+    @[DB::Field(ignore: true)]
+    @checksum : UInt32?
 
     def initialize(@repository, @branch, @source_file, @arch, @commit,
                    @username = nil, @password = nil, @force_compile = false)
@@ -94,10 +162,12 @@ module PlaceOS::Api
 
     def log(msg : String? = nil)
       Log.info { {message: msg || @message, id: id, repository: repository, branch: branch, source_file: source_file, commit: commit, force_compile: force_compile?} }
+      update_status
     end
 
     def run
       if compile_required?
+        @state = State::Running
         @message = "Compiling driver #{source_file}"
         log
         path, driver_binary = Api.compiler.compile(repository, branch, source_file, arch, commit, username, password)
@@ -126,6 +196,7 @@ module PlaceOS::Api
     rescue ex : Exception
       @state = State::Error
       @message = ex.inspect_with_backtrace
+      update_status
       Log.error(exception: ex) { "Exception occurred in Task run" }
     ensure
       path.try { |dir| FileUtils.rm_r(dir) } rescue nil
@@ -141,50 +212,128 @@ module PlaceOS::Api
     end
 
     def status
-      TaskStatus.new(@state, id, @message, source_file, repository, branch, commit)
+      update_status
+      TaskStatus.new(@state, id, @message, source_file, repository, branch, commit, Time.utc)
     end
 
     def checksum
-      str = String.build do |sb|
-        sb << repository
-        sb << source_file
-        sb << branch << commit << arch
+      @checksum ||= begin
+        str = String.build do |sb|
+          sb << repository
+          sb << source_file
+          sb << branch << commit << arch
+        end
+        Digest::CRC32.checksum(str.downcase)
       end
-      Digest::CRC32.checksum(str.downcase)
+    end
+
+    def update_status
+      Api.update_status(id, checksum, @state, @message)
     end
   end
 
   class TaskRunner
+    WAIT_TIME = 5.second
     getter lock : Mutex
     getter tasks : Deque(Task)
+    getter running : Array(String)
 
-    def initialize
+    def initialize(@job_count : Int32)
       @lock = Mutex.new
       @tasks = Deque(Task).new
+      @job_queue = Channel(Task).new(@job_count)
+      @running = Array(String).new
+      @terminate_queue = Channel(Nil).new(@job_count)
+      @stop_chan = Channel(Nil).new
     end
 
     def add_task(task : Task)
       lock.synchronize { tasks.push(task) }
     end
 
-    def start
-      spawn { run }
+    def has?(task_id : String, pending_only = false) : Bool
+      lock.synchronize {
+        task = tasks.any? { |t| t.id == task_id }
+        return task if pending_only
+        task || running.includes?(task_id)
+      }
     end
 
-    private def run
+    def cancel_task(task_id : String) : Nil
+      lock.synchronize { tasks.reject! { |t| t.id == task_id } }
+    end
+
+    def start
+      @job_count.times do |i|
+        spawn(name: "Worker-#{i + 1}") { handle_job(@job_queue, @terminate_queue, WAIT_TIME) }
+      end
+      spawn(name: "JobRunner") { run(@stop_chan) }
+    end
+
+    def stop
+      spawn { @stop_chan.send(nil) }
+    end
+
+    def get_job?
+      lock.synchronize do
+        work = tasks.pop?
+        if w = work
+          running << w.id
+        end
+        work
+      end
+    end
+
+    def job_done(id : String) : Nil
+      lock.synchronize { running.delete(id) }
+    end
+
+    private def run(terminate : Channel(Nil))
       loop do
-        unless tasks.empty?
-          # We will get into this only if tasks contain elements
-          # but for a race condition precaution (Though that's won't happen, as we are not running in MT mode)
-          # but in case, let's just capture IndexError (if any) and continue
-          # We don't to break out from this loop, or else remaining jobs won't get executed.
-          # Task#run doesn't raise any exception, so we are good here.
-          task = lock.synchronize { tasks.shift rescue nil }
-          task.try &.run
-          next
+        if task = get_job?
+          begin
+            select
+            when terminate.receive?
+              Log.info { "JobRunner received shutdown request" }
+              break
+            when @job_queue.send(task)
+              Log.info { {message: "Task scheduled to run by worker.", task: task.id, driver: task.source_file} }
+              next
+            end
+          rescue Channel::ClosedError
+            Log.error { "ERROR: Job runner queue channel closed" }
+            break
+          end
         end
         sleep 0.1
       end
+      Log.info { "Terminating job workers" }
+      @job_count.times { @terminate_queue.send(nil) }
     end
+
+    private def handle_job(chan : Channel(Task), terminate : Channel(Nil), wait_time : Time::Span)
+      loop do
+        select
+        when task = chan.receive
+          task.run
+          job_done(task.id)
+        when terminate.receive?
+          Log.info { "shutting down job worker" }
+          break
+        when timeout wait_time
+          sleep 0.1
+        end
+      rescue Channel::ClosedError
+        Log.error { "shutting down job worker #{Fiber.current.name} due to channel closed" }
+        break
+      end
+    end
+  end
+end
+
+module Enum::ValueConverter(T)
+  def self.from_rs(rs : ::DB::ResultSet)
+    val = rs.read(Int32?) || 0
+    T.from_value(val)
   end
 end

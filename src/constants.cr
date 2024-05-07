@@ -1,4 +1,5 @@
 require "action-controller/logger"
+require "./two_factor"
 
 module PlaceOS::Api
   APP_NAME    = "build-api"
@@ -24,6 +25,14 @@ module PlaceOS::Api
 
   DEFAULT_TIMEOUT  = (ENV["TIMEOUT"]? || 300).to_i
   RECOMPILE_PREFIX = "RECOMPILE-"
+
+  PARALELL_JOBS           = (ENV["PARALELL_JOBS"]? || 1).to_i
+  ALLOWED_FAILED_ATTEMPTS = (ENV["ALLOWED_FAILED_ATTEMPTS"]? || 2).to_i
+
+  # security
+  TOTP_SECRET           = ENV["TOTP_SECRET"]? || TOTP.generate_base32_secret(32)
+  COOKIE_SESSION_KEY    = ENV["COOKIE_SESSION_KEY"]? || "_spider_gazelle_"
+  COOKIE_SESSION_SECRET = ENV["COOKIE_SESSION_SECRET"]? || TOTP_SECRET
 
   def self.arch
     {% if flag?(:x86_64) %} "amd64" {% elsif flag?(:aarch64) %} "arm64" {% end %} || raise("Uknown architecture")

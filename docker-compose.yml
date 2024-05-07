@@ -10,7 +10,8 @@ x-s3-client-env: &s3-client-env
 
 services:
   test:
-    image: placeos/service-spec-runner:${CRYSTAL_VERSION:-latest}
+    build:
+      dockerfile: Dockerfile.spec
     volumes:
       - ${PWD}/spec:/app/spec
       - ${PWD}/src:/app/src
@@ -30,17 +31,6 @@ services:
       SPEC_ARGUMENTS: ''
       TIMEOUT: 200
       OTEL_CRYSTAL_DISABLE_INSTRUMENTATION_HTTP_CLIENT: 'false'
-
-  # build-api:
-  #   build: .
-  #   depends_on:
-  #     - minio
-  #     - testbucket
-  #   ports:
-  #     - 3000:3000
-  #   environment:
-  #     << : *s3-client-env
-  #     SG_ENV: "development"
   
   minio:
     image: minio/minio:latest
