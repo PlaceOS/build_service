@@ -32,6 +32,9 @@ dependencies:
   qr-code:
     github: spider-gazelle/qr-code
 
+  stumpy_png:
+    github: stumpycr/stumpy_png
+
 development_dependencies:
   ameba:
     github: veelenga/ameba

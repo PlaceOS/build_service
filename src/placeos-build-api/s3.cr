@@ -1,6 +1,7 @@
 require "awscr-s3"
 require "http/headers"
 require "./utils"
+require "../ext/url"
 
 module PlaceOS::Api
   def self.with_s3(&)
@@ -111,20 +112,25 @@ module PlaceOS::Api
       end
 
       def url : String
+        scheme = "https://"
+        host = nil
+        if h = hostname
+          scheme, host = h
+        end
         options = Awscr::S3::Presigned::Url::Options.new(
           aws_access_key: AWS_KEY,
           aws_secret_key: AWS_SECRET,
           region: AWS_REGION,
           object: "/#{@name}",
           bucket: AWS_S3_BUCKET,
-          host_name: hostname,
+          host_name: host,
           expires: AWS_S3_LINK_EXPIRY.to_i.to_i32,
           additional_options: {
             "Content-Type" => "binary/octet-stream",
           })
         url = Awscr::S3::Presigned::Url.new(options)
         Log.debug { "Generating signed URL}" }
-        url.for(:get)
+        url.for(:get, scheme)
       end
 
       def get_resp
@@ -167,7 +173,7 @@ module PlaceOS::Api
       private def hostname
         if h = AWS_S3_ENDPOINT
           uri = URI.parse(h)
-          "#{uri.hostname}:#{uri.port}"
+          {"#{uri.scheme}://", "#{uri.hostname}:#{uri.port}"}
         end
       end
     end
