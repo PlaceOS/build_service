@@ -3,7 +3,7 @@ version: 2.0
 shards:
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 5.6.4
+    version: 7.4.2
 
   ameba:
     git: https://github.com/veelenga/ameba.git
@@ -53,10 +53,6 @@ shards:
     git: https://github.com/crystal-loot/exception_page.git
     version: 0.4.1
 
-  future:
-    git: https://github.com/crystal-community/future.cr.git
-    version: 1.0.0
-
   git-repository:
     git: https://github.com/place-labs/git-repository.git
     version: 1.4.0
@@ -87,7 +83,7 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.5.3+git.commit.cd3994b22d9f7a0d68752698974d3873a1b2fce2
+    version: 0.5.4+git.commit.9b26aabef208b9eb0bf4612788362fa41768790b
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
