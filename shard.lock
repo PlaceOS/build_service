@@ -3,11 +3,11 @@ version: 2.0
 shards:
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.4.2
+    version: 7.4.3
 
   ameba:
     git: https://github.com/veelenga/ameba.git
-    version: 1.6.1
+    version: 1.6.3
 
   awscr-s3:
     git: https://github.com/taylorfinnell/awscr-s3.git
@@ -23,7 +23,7 @@ shards:
 
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
-    version: 2.0.1
+    version: 2.0.2
 
   crystal-base32:
     git: https://github.com/sushichain/crystal-base32.git
@@ -35,7 +35,7 @@ shards:
 
   csuuid:
     git: https://github.com/wyhaines/csuuid.cr.git
-    version: 1.0.1+git.commit.b71cf5c899dd5cde6aff8e922bdabd5e2dfab585
+    version: 1.0.2
 
   db:
     git: https://github.com/crystal-lang/crystal-db.git
@@ -51,11 +51,11 @@ shards:
 
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
-    version: 0.4.1
+    version: 0.5.0
 
   git-repository:
     git: https://github.com/place-labs/git-repository.git
-    version: 1.4.0
+    version: 1.4.1
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
@@ -71,15 +71,15 @@ shards:
 
   lucky_router:
     git: https://github.com/luckyframework/lucky_router.git
-    version: 0.5.2
+    version: 0.6.0
 
   nbchannel:
     git: https://github.com/wyhaines/nbchannel.cr.git
-    version: 0.1.0+git.commit.a8f5be6aa198abfa9f1893e1156640b8ea526094
+    version: 0.1.0
 
   opentelemetry-api:
     git: https://github.com/wyhaines/opentelemetry-api.cr.git
-    version: 0.5.0
+    version: 0.5.1
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
@@ -87,7 +87,7 @@ shards:
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
-    version: 0.6.1+git.commit.addc3c740d5ea8e61ffd9500fe32ebf21210d66c
+    version: 0.6.3+git.commit.470e34105727b039aee2bb3650e907bf6eefc971
 
   parse_date:
     git: https://github.com/wyhaines/parsedate.cr.git
@@ -111,7 +111,7 @@ shards:
 
   splay_tree_map:
     git: https://github.com/wyhaines/splay_tree_map.cr.git
-    version: 0.2.2
+    version: 0.3.0
 
   sqlite3:
     git: https://github.com/crystal-lang/crystal-sqlite3.git
@@ -127,9 +127,9 @@ shards:
 
   time-ext:
     git: https://github.com/wyhaines/time-ext.cr.git
-    version: 0.1.0+git.commit.175f658235fb6cdc9c804cb96da510fec27f4cd6
+    version: 1.0.1
 
   tracer:
     git: https://github.com/wyhaines/tracer.cr.git
-    version: 0.3.1
+    version: 0.3.2
 
