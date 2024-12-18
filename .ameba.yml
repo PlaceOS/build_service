@@ -1,2 +1,9 @@
- Lint/NotNil:
-   Enabled: false
+Naming/BlockParameterName:
+  Description: Disallows non-descriptive block parameter names
+  Enabled: false
+  Severity: Convention
+
+Naming/AccessorMethodName:
+  Description: Makes sure that accessor methods are named properly
+  Enabled: false
+  Severity: Convention

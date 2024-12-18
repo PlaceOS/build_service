@@ -1,7 +1,7 @@
 # Test Container
 ###############################################################################
 ARG crystal_version=latest
-FROM placeos/crystal:${crystal_version} as test
+FROM placeos/crystal:${crystal_version} AS test
 
 WORKDIR /app
 

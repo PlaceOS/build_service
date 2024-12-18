@@ -1,6 +1,6 @@
 ARG CRYSTAL_VERSION=latest
 
-FROM placeos/crystal:$CRYSTAL_VERSION as build
+FROM placeos/crystal:$CRYSTAL_VERSION AS build
 WORKDIR /app
 
 # Set the commit via a build arg
@@ -12,9 +12,7 @@ ARG PLACE_VERSION="DEV"
 ENV OTEL_CRYSTAL_DISABLE_INSTRUMENTATION_HTTP_CLIENT=false
 
 # Install sqlite3
-RUN apk update && apk upgrade
-RUN apk add --no-cache sqlite-dev
-
+RUN apk update && apk upgrade && apk add --no-cache sqlite-dev
 
 # Install shards for caching
 COPY shard.* .
@@ -34,9 +32,7 @@ ENV UID=$IMAGE_UID
 ENV USER=appuser
 
 # Install sqlite3
-RUN apk update && apk upgrade
-RUN apk add --no-cache sqlite
-
+RUN apk update && apk upgrade && apk add --no-cache sqlite
 
 # Create a non-privileged user, defaults are appuser:10001
 RUN adduser \
@@ -52,14 +48,13 @@ WORKDIR /app
 COPY --from=build /app/bin/build-api /app/
 RUN chown appuser -R /app
 
-# Use an unprivileged user.
+# Use an unprivileged user
 USER appuser:appuser
 
-# Spider-gazelle has a built in helper for health checks (change this as desired for your applications)
+# Health check for the app
 HEALTHCHECK CMD ["/app/build-api", "-c", "http://127.0.0.1:3000/api/build/v1"]
 
-# Run the app binding on port 3000
+# Expose the app port
 EXPOSE 3000
 ENTRYPOINT ["/app/build-api"]
 CMD ["/app/build-api", "-b", "0.0.0.0", "-p", "3000"]
-

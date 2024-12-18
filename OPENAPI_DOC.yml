@@ -4,13 +4,13 @@ info:
   description: PlaceOS Build API. Performs driver compilation, retrieval and storage
     on S3
   title: build-api
-  version: 1.0.0
+  version: 1.1.0
 paths:
   /api/build/v1:
     get:
       tags:
       - Driver
-      operationId: PlaceOS::Api::Driver#index
+      operationId: PlaceOS::Api::Driver_index
       parameters: []
       responses:
         200:
@@ -52,7 +52,7 @@ paths:
       summary: returns the build details of the service
       tags:
       - Driver
-      operationId: PlaceOS::Api::Driver#version
+      operationId: PlaceOS::Api::Driver_version
       parameters: []
       responses:
         200:
@@ -103,7 +103,7 @@ paths:
         else returns 404'
       tags:
       - Driver
-      operationId: PlaceOS::Api::Driver#compiled
+      operationId: PlaceOS::Api::Driver_compiled
       parameters:
       - name: arch
         in: path
@@ -191,7 +191,7 @@ paths:
         else returns 404'
       tags:
       - Driver
-      operationId: PlaceOS::Api::Driver#metadata
+      operationId: PlaceOS::Api::Driver_metadata
       parameters:
       - name: file_name
         in: path
@@ -278,7 +278,7 @@ paths:
         else returns 404'
       tags:
       - Driver
-      operationId: PlaceOS::Api::Driver#defaults
+      operationId: PlaceOS::Api::Driver_defaults
       parameters:
       - name: file_name
         in: path
@@ -367,7 +367,7 @@ paths:
         Content-Location to track the status of this request.'
       tags:
       - Driver
-      operationId: PlaceOS::Api::Driver#build
+      operationId: PlaceOS::Api::Driver_build
       parameters:
       - name: arch
         in: path
@@ -471,7 +471,7 @@ paths:
         Returns 404 if no such task exists'
       tags:
       - Driver
-      operationId: PlaceOS::Api::Driver#task_status
+      operationId: PlaceOS::Api::Driver_task_status
       parameters:
       - name: arch
         in: path
@@ -531,7 +531,7 @@ paths:
       summary: Job monitor endpoint. Provides a list of requested state Jobs
       tags:
       - Monitor
-      operationId: PlaceOS::Api::Monitor#monitor
+      operationId: PlaceOS::Api::Monitor_monitor
       parameters:
       - name: state
         in: query
@@ -592,7 +592,7 @@ paths:
     delete:
       tags:
       - Monitor
-      operationId: PlaceOS::Api::Monitor#cancel
+      operationId: PlaceOS::Api::Monitor_cancel
       parameters:
       - name: job
         in: path

@@ -305,7 +305,7 @@ module PlaceOS::Api
             break
           end
         end
-        sleep 0.1
+        sleep 100.millisecond
       end
       Log.info { "Terminating job workers" }
       @job_count.times { @terminate_queue.send(nil) }
@@ -321,7 +321,7 @@ module PlaceOS::Api
           Log.info { "shutting down job worker" }
           break
         when timeout wait_time
-          sleep 0.1
+          sleep 100.millisecond
         end
       rescue Channel::ClosedError
         Log.error { "shutting down job worker #{Fiber.current.name} due to channel closed" }

@@ -3,11 +3,11 @@ version: 2.0
 shards:
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.4.3
+    version: 7.5.1
 
   ameba:
     git: https://github.com/veelenga/ameba.git
-    version: 1.6.3
+    version: 1.6.4
 
   awscr-s3:
     git: https://github.com/taylorfinnell/awscr-s3.git
@@ -43,7 +43,7 @@ shards:
 
   debug:
     git: https://github.com/sija/debug.cr.git
-    version: 2.0.3
+    version: 2.0.4
 
   defined:
     git: https://github.com/wyhaines/defined.cr.git
@@ -83,7 +83,7 @@ shards:
 
   opentelemetry-instrumentation:
     git: https://github.com/wyhaines/opentelemetry-instrumentation.cr.git
-    version: 0.5.4+git.commit.9b26aabef208b9eb0bf4612788362fa41768790b
+    version: 0.5.5+git.commit.83eace832dad20a71231e71a42258538b05fb193
 
   opentelemetry-sdk: # Overridden
     git: https://github.com/wyhaines/opentelemetry-sdk.cr.git
@@ -99,7 +99,7 @@ shards:
 
   protobuf:
     git: https://github.com/jeromegn/protobuf.cr.git
-    version: 2.3.0
+    version: 2.3.1
 
   qr-code:
     git: https://github.com/spider-gazelle/qr-code.git
