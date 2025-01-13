@@ -1,6 +1,5 @@
 require "git-repository"
 require "file_utils"
-require "opentelemetry-sdk"
 require "./compiler"
 
 module PlaceOS::Api
@@ -45,9 +44,8 @@ module PlaceOS::Api
     repo = repository(uri, branch, username, password)
     commit = "FETCH_HEAD" if commit.nil?
 
-    commit = OpenTelemetry.trace.in_span("Downloading #{uri} at #{branch}") do
-      repo.fetch_commit(branch, commit, source_file, temporary_path)
-    end
+    Log.info { "Downloading #{uri} at #{branch}" }
+    commit = repo.fetch_commit(branch, commit, source_file, temporary_path)
 
     Log.trace { {message: "checked out repository", branch: branch, hash: commit.hash} }
     yield Repository.new(Path[temporary_path], commit)
