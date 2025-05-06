@@ -59,7 +59,7 @@ module PlaceOS::Api
           task = TaskStatus.from_json(resp.body)
           break if task.completed?
           resp.status_code.should eq 200
-          sleep 5
+          sleep 5.seconds
         end
         resp.status_code.should eq 200
         task.state.to_s.should eq("error")
@@ -97,7 +97,7 @@ module PlaceOS::Api
           task = TaskStatus.from_json(resp.body)
           break if task.completed?
           resp.status_code.should eq 200
-          sleep 5
+          sleep 5.seconds
         end
         resp.status_code.should eq 303
         task.state.to_s.should eq("done")
@@ -196,7 +196,6 @@ module PlaceOS::Api
 
         resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{prms}")
         resp.status_code.should eq 202
-
         task = TaskStatus.from_json(resp.body)
 
         code = TOTP.generate_number_string(Api::TOTP_SECRET)
