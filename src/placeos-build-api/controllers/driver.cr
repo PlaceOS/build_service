@@ -36,7 +36,7 @@ module PlaceOS::Api
       @[AC::Param::Info(description: "Branch to return driver binary for, defaults to master", example: "main")]
       branch : String?,
       @[AC::Param::Info(description: "the commit hash of the driver to check is compiled", example: "e901494")]
-      commit : String
+      commit : String,
     ) : S3::LinkData?
       Log.context.set(driver: file_name, arch: arch, repository: url, branch: branch, commit: commit)
       if ret = Api.with_s3 &.compiled?(file_name, arch, url, commit, branch)
@@ -57,7 +57,7 @@ module PlaceOS::Api
       @[AC::Param::Info(description: "Branch to return driver binary for, defaults to master", example: "main")]
       branch : String?,
       @[AC::Param::Info(description: "the commit hash of the driver to check is compiled, defaults to latest commit on branch", example: "e901494362f6859100b8f3")]
-      commit : String
+      commit : String,
     ) : String?
       Log.context.set(driver: file_name, repository: url, branch: branch, commit: commit)
       if ret = Api.with_s3 &.compiled?(file_name, "meta", url, commit, branch)
@@ -78,7 +78,7 @@ module PlaceOS::Api
       @[AC::Param::Info(description: "Branch to return driver binary for, defaults to master", example: "main")]
       branch : String?,
       @[AC::Param::Info(description: "the commit hash of the driver to check is compiled, defaults to latest commit on branch", example: "e901494362f6859100b8f3")]
-      commit : String
+      commit : String,
     ) : String?
       Log.context.set(driver: file_name, repository: url, branch: branch, commit: commit)
       if ret = Api.with_s3 &.compiled?(file_name, "meta", url, commit, branch)
@@ -104,7 +104,7 @@ module PlaceOS::Api
       @[AC::Param::Info(description: "the commit hash of the driver to check is compiled", example: "e901494")]
       commit : String,
       @[AC::Param::Info(description: "Whether to re-compile driver using the latest shards? default is false", example: "true")]
-      force : Bool = false
+      force : Bool = false,
     ) : TaskStatus
       Log.context.set(driver: file_name, arch: arch, repository: url, branch: branch, commit: commit, force: force)
       Log.info { "Processing compile driver request" }
@@ -124,7 +124,7 @@ module PlaceOS::Api
       @[AC::Param::Info(description: "the system architecture, defaults to architecutre of system where this service is running", example: "amd64 | arm64")]
       arch : String,
       @[AC::Param::Info(description: "Submitted Job ID returned by POST request")]
-      id : String
+      id : String,
     ) : TaskStatus?
       if task = Api.task_status(id)
         if task.success?
