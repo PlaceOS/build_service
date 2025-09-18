@@ -2,7 +2,7 @@ version: 2.0
 shards:
   action-controller:
     git: https://github.com/spider-gazelle/action-controller.git
-    version: 7.6.0
+    version: 7.6.1
 
   ameba:
     git: https://github.com/veelenga/ameba.git
@@ -38,7 +38,7 @@ shards:
 
   db:
     git: https://github.com/crystal-lang/crystal-db.git
-    version: 0.13.1
+    version: 0.14.0
 
   exception_page:
     git: https://github.com/crystal-loot/exception_page.git
@@ -50,7 +50,7 @@ shards:
 
   git-repository:
     git: https://github.com/place-labs/git-repository.git
-    version: 1.5.0
+    version: 1.6.0
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
@@ -66,7 +66,7 @@ shards:
 
   lucky_router:
     git: https://github.com/luckyframework/lucky_router.git
-    version: 0.6.0
+    version: 0.6.1
 
   placeos-log-backend:
     git: https://github.com/place-labs/log-backend.git
@@ -78,7 +78,7 @@ shards:
 
   sqlite3:
     git: https://github.com/crystal-lang/crystal-sqlite3.git
-    version: 0.21.0
+    version: 0.22.0
 
   stumpy_core:
     git: https://github.com/stumpycr/stumpy_core.git
