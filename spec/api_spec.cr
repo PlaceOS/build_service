@@ -122,6 +122,7 @@ module PlaceOS::Api
           json.has_key?(k).should be_true
         end
 
+        json["url"].as_s.starts_with?(PlaceOS::Api::AWS_S3_ENDPOINT.not_nil!).should be_true
         # compiled driver should return metadata
         resp = client.get("#{namespace}/metadata/#{uri}?#{params}")
         resp.status_code.should eq 200

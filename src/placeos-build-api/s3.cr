@@ -111,11 +111,14 @@ module PlaceOS::Api
       end
 
       def url : String
-        scheme = "https://"
+        scheme = "https"
         host = nil
+        force_path_style = false
         if h = hostname
+          force_path_style = true
           scheme, host = h
         end
+
         options = Awscr::S3::Presigned::Url::Options.new(
           aws_access_key: AWS_KEY,
           aws_secret_key: AWS_SECRET,
@@ -127,7 +130,9 @@ module PlaceOS::Api
           expires: AWS_S3_LINK_EXPIRY.to_i.to_i32,
           additional_options: {
             "Content-Type" => "binary/octet-stream",
-          })
+          },
+          force_path_style: force_path_style,
+        )
         url = Awscr::S3::Presigned::Url.new(options)
         Log.debug { "Generating signed URL}" }
         url.for(:get)
@@ -173,7 +178,7 @@ module PlaceOS::Api
       private def hostname
         if h = AWS_S3_ENDPOINT
           uri = URI.parse(h)
-          {"#{uri.scheme}://", "#{uri.hostname}:#{uri.port}"}
+          {"#{uri.scheme}", "#{uri.hostname}:#{uri.port}"}
         end
       end
     end
