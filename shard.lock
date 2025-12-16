@@ -50,7 +50,7 @@ shards:
 
   git-repository:
     git: https://github.com/place-labs/git-repository.git
-    version: 1.7.0
+    version: 1.7.1
 
   habitat:
     git: https://github.com/luckyframework/habitat.git
