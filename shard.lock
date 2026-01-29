@@ -22,7 +22,7 @@ shards:
 
   connect-proxy:
     git: https://github.com/spider-gazelle/connect-proxy.git
-    version: 2.0.2
+    version: 2.0.3
 
   cron_parser:
     git: https://github.com/kostya/cron_parser.git
