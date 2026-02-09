@@ -1,6 +1,6 @@
 # PlaceOS Build Driver Service
 
-[PlaceOS](https://place.technology/) service for compiling and storing PlaceOS drivers. 
+[PlaceOS](https://place.technology/) service for compiling and storing PlaceOS drivers.
 
 ## Contributing
 
