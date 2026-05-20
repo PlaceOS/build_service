@@ -22,13 +22,27 @@ module PlaceOS::Api
                     username : String? = nil, password : String? = nil, force = false) : TaskStatus
     task_lock.synchronize do
       csum = checksum(repository, source_file, branch, commit, arch)
-      if Api.attempts(csum, State::Error) >= ALLOWED_FAILED_ATTEMPTS
-        Log.info { {message: "Driver compilation failure attempts exceed, returning last failed reason", driver: source_file, branch: branch, commit: commit} }
-        return get_last_result(csum)
-      end
-      if Api.job_exists?(csum)
-        job = Api.get_last_result(csum)
-        return job if running?(job.id)
+      if force
+        # When forcing a re-compile, supersede any still-pending task for the
+        # same checksum so we don't end up running the cached request and the
+        # forced request back to back.
+        if Api.job_exists?(csum)
+          existing = Api.get_last_result(csum)
+          if running?(existing.id, pending_only: true)
+            Log.info { {message: "Superseding pending task with forced compile request", driver: source_file, branch: branch, commit: commit, superseded_id: existing.id} }
+            task_runner.cancel_task(existing.id)
+            Api.update_status(existing.id, State::Cancelled, "Superseded by forced compile request")
+          end
+        end
+      else
+        if Api.attempts(csum, State::Error) >= ALLOWED_FAILED_ATTEMPTS
+          Log.info { {message: "Driver compilation failure attempts exceed, returning last failed reason", driver: source_file, branch: branch, commit: commit} }
+          return get_last_result(csum)
+        end
+        if Api.job_exists?(csum)
+          job = Api.get_last_result(csum)
+          return job if running?(job.id)
+        end
       end
       task = Task.new(repository, branch, source_file, arch, commit, username, password, force)
       Api.add_job(task)
@@ -39,10 +53,12 @@ module PlaceOS::Api
   end
 
   def self.cancel_task(task_id : String)
-    return false unless running?(task_id, true)
-    task_runner.cancel_task(task_id)
-    Api.update_status(task_id, State::Cancelled, "Job cancelled by admin")
-    true
+    task_lock.synchronize do
+      return false unless running?(task_id, true)
+      task_runner.cancel_task(task_id)
+      Api.update_status(task_id, State::Cancelled, "Job cancelled by admin")
+      true
+    end
   end
 
   def self.task_status(id : String) : TaskStatus?

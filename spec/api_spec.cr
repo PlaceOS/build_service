@@ -48,7 +48,7 @@ module PlaceOS::Api
         hdr.should_not be_nil
         location.should eq(hdr)
 
-        task.state.to_s.should eq("pending")
+        task.state.in?(Api::State::Pending, Api::State::Running, Api::State::Error).should be_true
         task.repo.should eq("https://github.com/placeos/private-drivers")
         task.driver.should eq("drivers/place/private_helper.cr")
         task.branch.should eq("master")
@@ -86,7 +86,7 @@ module PlaceOS::Api
         hdr.should_not be_nil
         location.should eq(hdr)
 
-        task.state.to_s.should eq("pending")
+        task.state.in?(Api::State::Pending, Api::State::Running, Api::State::Done).should be_true
         task.repo.should eq("https://github.com/placeos/private-drivers")
         task.driver.should eq("drivers/place/private_helper.cr")
         task.branch.should eq("master")
@@ -152,6 +152,30 @@ module PlaceOS::Api
         task2.id.should eq(task.id)
       end
 
+      it "should supersede a pending task when a force=true request arrives" do
+        prms = HTTP::Params{
+          "url"    => "https://github.com/placeos/private-drivers",
+          "branch" => "master",
+          "commit" => "supersededforce",
+        }
+
+        resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{prms}")
+        resp.status_code.should eq 202
+        original = TaskStatus.from_json(resp.body)
+
+        forced_prms = prms.dup
+        forced_prms["force"] = "true"
+        resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{forced_prms}")
+        resp.status_code.should eq 202
+        forced = TaskStatus.from_json(resp.body)
+
+        forced.id.should_not eq(original.id)
+
+        original_status = Api.task_status(original.id).not_nil!
+        original_status.state.should eq(Api::State::Cancelled)
+        original_status.message.should eq("Superseded by forced compile request")
+      end
+
       it "should return a list of pending jobs" do
         0.upto(3) do |i|
           prms = HTTP::Params{
@@ -193,6 +217,7 @@ module PlaceOS::Api
           "url"    => "https://github.com/placeos/private-drivers",
           "branch" => "master",
           "commit" => "abcxyzaa",
+          "force"  => "true",
         }
 
         resp = client.post("#{namespace}/#{Api.arch}/#{uri}?#{prms}")

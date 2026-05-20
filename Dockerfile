@@ -11,8 +11,18 @@ ARG PLACE_VERSION="DEV"
 # Disable HTTP::Client instrumentation
 ENV OTEL_CRYSTAL_DISABLE_INSTRUMENTATION_HTTP_CLIENT=false
 
-# Install sqlite3
-RUN apk update && apk upgrade && apk add --no-cache sqlite-dev
+# Install sqlite3 + libunwind static/dev so compiled driver binaries
+# get fully-symbolized stack traces (no "???" frames) on static musl builds.
+# xz-static / xz-dev are required because Alpine's libunwind 1.8.1 is built
+# with liblzma support (for compressed minidebuginfo decoding) and pulls in
+# `lzma_*` symbols when its ELF module objects are linked.
+# hadolint ignore=DL3018
+RUN apk update && apk upgrade && apk add --no-cache \
+    sqlite-dev \
+    libunwind-static \
+    libunwind-dev \
+    xz-static \
+    xz-dev
 
 # Install shards for caching
 COPY shard.* .
