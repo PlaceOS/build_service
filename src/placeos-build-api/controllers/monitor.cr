@@ -8,7 +8,7 @@ module PlaceOS::Api
     # Job monitor endpoint. Provides a list of requested state Jobs
     @[AC::Route::GET("/monitor")]
     def monitor(
-      @[AC::Param::Info(name: "state", description: "state of job to return. One of [pending,running,cancelled error,done]. Defaults to 'pending'", example: "pending")]
+      @[AC::Param::Info(name: "state", description: "state of job to return. One of [pending, running, cancelled, error, done]. Defaults to 'pending'", example: "pending")]
       state : Api::State = Api::State::Pending,
     ) : Array(TaskStatus)
       render json: Api.get_job_queue(state)
