@@ -90,5 +90,5 @@ shards:
 
   tasker:
     git: https://github.com/spider-gazelle/tasker.git
-    version: 2.1.4
+    version: 3.0.0
 
