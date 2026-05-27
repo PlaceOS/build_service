@@ -41,8 +41,19 @@ ARG IMAGE_UID="10001"
 ENV UID=$IMAGE_UID
 ENV USER=appuser
 
-# Install sqlite3
-RUN apk update && apk upgrade && apk add --no-cache sqlite
+# Install sqlite3 + the static libunwind/xz toolchain.
+# Drivers are compiled *inside this runtime container* with
+# `crystal build --static --link-flags "... -lunwind -llzma"` (see compiler.cr),
+# so the link step needs libunwind.a / liblzma.a here — having them only in the
+# build stage above is not enough. Without these, every driver compilation fails
+# with `cannot find -lunwind`. Mirrors the packages in Dockerfile.spec.
+# hadolint ignore=DL3018
+RUN apk update && apk upgrade && apk add --no-cache \
+    sqlite \
+    libunwind-static \
+    libunwind-dev \
+    xz-static \
+    xz-dev
 
 # Create a non-privileged user, defaults are appuser:10001
 RUN adduser \
