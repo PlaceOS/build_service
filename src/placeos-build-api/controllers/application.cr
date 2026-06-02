@@ -30,15 +30,31 @@ module PlaceOS::Api
       request.headers["X-Request-ID"]? || UUID.random.to_s
     end
 
+    # Calling services (such as core) identify themselves via a User-Agent
+    # header formatted as `PlaceOS/<version> <cluster_name>`.
+    getter user_agent : String? { request.headers["User-Agent"]?.presence }
+
     # This makes it simple to match client requests with server side logs.
     # When building microservices this ID should be propagated to upstream services.
     @[AC::Route::Filter(:before_action)]
     def set_request_id
       Log.context.set(
         client_ip: client_ip,
-        request_id: request_id
+        request_id: request_id,
       )
       response.headers["X-Request-ID"] = request_id
+    end
+
+    @[AC::Route::Filter(:before_action)]
+    def placeos_client_metadata
+      if (agent = user_agent) && agent.starts_with?("PlaceOS/")
+        version, _, cluster = agent.partition(' ')
+
+        Log.context.set(
+          placeos_ver: version.presence,
+          cluster_name: cluster.presence,
+        )
+      end
     end
 
     @[AC::Route::Filter(:before_action)]
