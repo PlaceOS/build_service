@@ -32,7 +32,9 @@ RUN shards install --production --ignore-crystal-version --skip-postinstall --sk
 COPY ./src /app/src
 
 # Build application
-RUN shards build --production --release --error-trace
+# -Devloop=libevent: the native epoll event loop corrupts its timers under load
+# (crystal-lang/crystal#17058)
+RUN shards build --production --release --error-trace -Devloop=libevent
 
 FROM placeos/crystal:$CRYSTAL_VERSION
 

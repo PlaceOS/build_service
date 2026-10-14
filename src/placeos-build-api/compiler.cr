@@ -101,6 +101,7 @@ module PlaceOS::Api
           #                              (--release is intentionally avoided: it enables -O3 + --single-module
           #                               which inlines aggressively and destroys backtrace fidelity)
           # See DRIVER_LINK_FLAGS for the rationale behind the linker flags.
+          #   -Devloop=libevent          the epoll event loop corrupts its timers (crystal-lang/crystal#17058)
           result = RunFrom.run_from(path,
             "crystal",
             {
@@ -112,6 +113,7 @@ module PlaceOS::Api
               "-O1",
               "--frame-pointers", "always",
               "--link-flags", DRIVER_LINK_FLAGS,
+              "-Devloop=libevent",
               "-o", binary_path,
               build_script,
             },
